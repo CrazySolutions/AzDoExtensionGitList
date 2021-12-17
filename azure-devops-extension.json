@@ -1,0 +1,48 @@
+{
+    "manifestVersion": 1,
+    "id": "git-repository-list",
+    "publisher": "CrazySolutions",
+    "version": "1.0.14",
+    "name": "Git repository list",
+    "description": "Lists git repositories in a more convenient way",
+    "public": true,
+    "categories": [
+        "Azure Repos"
+    ],
+    "tags": [
+        "git",
+        "repos"
+    ],
+    "demands": [
+        "api-version/5.1"
+    ],
+    "scopes": [
+        "vso.code"
+    ],
+    "targets": [
+        {
+            "id": "Microsoft.VisualStudio.Services"
+        }
+    ],
+    "icons": {
+        "default": "logo.png"
+    },
+    "content": {
+        "details": {
+            "path": "overview.md"
+        },
+        "license": {
+            "path": "LICENSE"
+        }
+    },
+    "files": [
+        {
+            "path": "static",
+            "addressable": true
+        },
+        {
+            "path": "dist",
+            "addressable": true
+        }
+    ]
+}
