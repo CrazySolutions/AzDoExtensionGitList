@@ -29,6 +29,15 @@ class PivotContent extends React.Component<{}, IPivotContentState> {
 
         this.state = {
             columns: [{
+                id: "project",
+                name: "Project",
+                renderCell: (rowIndex: number, columnIndex: number, tableColumn: ITableColumn<GitRepository>, tableItem: GitRepository): JSX.Element => {
+                    const content: ISimpleListCell = { text: tableItem.project.name }
+                    return renderSimpleCellValue<any>(columnIndex, tableColumn, content);
+                },
+                width: 200
+            },
+            {
                 id: "name",
                 name: "Repository",
                 renderCell: (rowIndex: number, columnIndex: number, tableColumn: ITableColumn<GitRepository>, tableItem: GitRepository): JSX.Element => {
@@ -43,15 +52,6 @@ class PivotContent extends React.Component<{}, IPivotContentState> {
             //     renderCell: renderSimpleCell,
             //     width: 400
             // },
-            {
-                id: "project",
-                name: "Project",
-                renderCell: (rowIndex: number, columnIndex: number, tableColumn: ITableColumn<GitRepository>, tableItem: GitRepository): JSX.Element => {
-                    const content: ISimpleListCell = { text: tableItem.project.name }
-                    return renderSimpleCellValue<any>(columnIndex, tableColumn, content);
-                },
-                width: 200
-            },
             {
                 id: "size",
                 name: "Size",
