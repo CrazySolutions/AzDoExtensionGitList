@@ -1,0 +1,81 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+    tags: ['*']
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  ci:
+    name: Test, build and package
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Test
+        run: npm test
+
+      - name: Calculate version
+        run: |
+          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          if [ -z "$LAST_TAG" ]; then
+            MAJOR_MINOR="1.0"
+            PATCH=$(git rev-list origin/master --count)
+          else
+            MAJOR_MINOR=$(echo "$LAST_TAG" | sed 's/^v//' | cut -d. -f1,2)
+            PATCH=$(git rev-list "${LAST_TAG}..origin/master" --count)
+          fi
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            VERSION="${MAJOR_MINOR}.${PATCH}.${{ github.run_number }}"
+          else
+            VERSION="${MAJOR_MINOR}.${PATCH}"
+          fi
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "Calculated version: $VERSION"
+
+      - name: Set version in manifest
+        run: jq ".version = \"$VERSION\"" azure-devops-extension.json > tmp.json && mv tmp.json azure-devops-extension.json
+
+      - name: Build
+        run: npm run build
+
+      - name: Package dev extension
+        run: |
+          npx tfx extension create --manifest-globs azure-devops-extension.json --overrides-file azure-devops-extension.dev.json --no-prompt
+          mkdir dev && mv *.vsix dev/
+
+      - name: Upload dev artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: git-repository-list-dev-${{ env.VERSION }}
+          path: 'dev/*.vsix'
+          if-no-files-found: error
+
+      - name: Package prod extension
+        if: github.event_name != 'pull_request'
+        run: npx tfx extension create --manifest-globs azure-devops-extension.json --no-prompt
+
+      - name: Upload prod artifact
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-artifact@v7
+        with:
+          name: git-repository-list-${{ env.VERSION }}
+          path: '*.vsix'
+          if-no-files-found: error

@@ -1,0 +1,147 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 14px;
+  color: #1f1f1f;
+  background: #ffffff;
+  padding: 20px 24px;
+}
+
+.mb-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.mb-header h1 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1f1f1f;
+}
+
+.mb-count {
+  font-size: 12px;
+  color: #605e5c;
+  background: #f3f2f1;
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+.mb-loading,
+.mb-empty {
+  padding: 40px 0;
+  text-align: center;
+  color: #605e5c;
+  font-size: 14px;
+}
+
+.mb-error {
+  padding: 40px 0;
+  text-align: center;
+  color: #a4262c;
+  font-size: 14px;
+}
+
+.mb-filter-input {
+  display: block;
+  width: 100%;
+  max-width: 400px;
+  margin-bottom: 12px;
+  padding: 5px 10px;
+  font-size: 13px;
+  font-family: inherit;
+  color: #1f1f1f;
+  background: #ffffff;
+  border: 1px solid #8a8886;
+  border-radius: 2px;
+  outline: none;
+}
+
+.mb-filter-input:focus {
+  border-color: #0078d4;
+  box-shadow: 0 0 0 1px #0078d4;
+}
+
+.mb-no-results {
+  padding: 20px 12px;
+  color: #605e5c;
+  font-style: italic;
+}
+
+.mb-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.mb-table thead th {
+  text-align: left;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #605e5c;
+  border-bottom: 1px solid #edebe9;
+  white-space: nowrap;
+}
+
+.mb-sortable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.mb-sortable:hover {
+  color: #0078d4;
+}
+
+.mb-sortable[data-sort="asc"]::after {
+  content: ' ▲';
+}
+
+.mb-sortable[data-sort="desc"]::after {
+  content: ' ▼';
+}
+
+.mb-table tbody td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #f3f2f1;
+  vertical-align: middle;
+  color: #1f1f1f;
+}
+
+.mb-table tbody tr:hover td {
+  background: #f3f2f1;
+}
+
+.mb-clickable-row {
+  cursor: pointer;
+}
+
+.mb-branch-name {
+  font-family: "Cascadia Code", "Consolas", "Courier New", monospace;
+  font-size: 13px;
+  color: #0078d4;
+  text-decoration: none;
+}
+
+.mb-branch-name:hover {
+  text-decoration: underline;
+}
+
+.mb-cell-link {
+  color: #1f1f1f;
+  text-decoration: none;
+}
+
+.mb-cell-link:hover {
+  color: #0078d4;
+  text-decoration: underline;
+}
+
+.mb-stale {
+  color: #a4262c;
+}

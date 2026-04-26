@@ -3,7 +3,7 @@ import "./Pivot.scss";
 import * as React from "react";
 import * as SDK from "azure-devops-extension-sdk";
 
-import { showRootComponent } from "../../Common";
+import { showRootComponent } from "../common/Common";
 
 import { getClient, IHostNavigationService, CommonServiceIds } from "azure-devops-extension-api";
 import { CoreRestClient, ProjectVisibility, TeamProjectReference } from "azure-devops-extension-api/Core";
@@ -57,7 +57,7 @@ class PivotContent extends React.Component<{}, IPivotContentState> {
                 name: "Size",
                 renderCell: (rowIndex: number, columnIndex: number, tableColumn: ITableColumn<GitRepository>, tableItem: GitRepository): JSX.Element => {
                     var size = tableItem.size
-                    if (size == NaN) {
+                    if (Number.isNaN(size)) {
                         size = 0
                     }
                     size = (tableItem.size / 1000000) //Size in MB

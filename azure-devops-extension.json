@@ -35,6 +35,50 @@
             "path": "LICENSE"
         }
     },
+    "repository": {
+        "type": "git",
+        "uri": "https://github.com/CrazySolutions/AzDoExtensionGitList"
+    },
+    "links": {
+        "support": {
+            "uri": "https://github.com/CrazySolutions/AzDoExtensionGitList/issues"
+        },
+        "issues": {
+            "uri": "https://github.com/CrazySolutions/AzDoExtensionGitList/issues"
+        },
+        "privacypolicy": {
+            "uri": "https://github.com/CrazySolutions/AzDoExtensionGitList/blob/master/PRIVACY.md"
+        }
+    },
+    "contributions": [
+        {
+            "id": "org-hub",
+            "type": "ms.vss-web.tab",
+            "description": "My repositories at the organization/collection level",
+            "targets": [
+                "ms.vss-tfs-web.suite-home-pivots"
+            ],
+            "properties": {
+                "name": "My repositories",
+                "order": 500000,
+                "uri": "dist/org-hub/index.html"
+            }
+        },
+        {
+            "id": "repos-hub",
+            "type": "ms.vss-web.hub",
+            "description": "My repositories under Repos within a project",
+            "targets": [
+                "ms.vss-code-web.code-hub-group"
+            ],
+            "properties": {
+                "name": "Repository list",
+                "order": 150,
+                "uri": "dist/repos-hub/index.html",
+                "icon": "asset://static/git-icon-128.png"
+            }
+        }
+    ],
     "files": [
         {
             "path": "static",

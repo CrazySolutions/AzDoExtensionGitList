@@ -7,7 +7,7 @@ import { Header, TitleSize } from "azure-devops-ui/Header";
 import { Page } from "azure-devops-ui/Page";
 
 import { Table, ITableColumn, renderSimpleCell, renderSimpleCellValue, TableRow, ITableRow } from "azure-devops-ui/Table";
-import { showRootComponent } from "../../Common";
+import { showRootComponent } from "../common/Common";
 import { GitRepository } from "azure-devops-extension-api/Git/Git";
 import { CommonServiceIds, IProjectPageService, getClient } from "azure-devops-extension-api";
 import { ISimpleListCell } from "azure-devops-ui/List";
@@ -45,7 +45,7 @@ class RepositoryServiceHubContent extends React.Component<{}, IRepositoryService
                 name: "Size",
                 renderCell: (rowIndex: number, columnIndex: number, tableColumn: ITableColumn<GitRepository>, tableItem: GitRepository): JSX.Element => {
                     var size = tableItem.size
-                    if (size == NaN) {
+                    if (Number.isNaN(size)) {
                         size = 0
                     }
                     size = (tableItem.size / 1000000) //Size in MB
