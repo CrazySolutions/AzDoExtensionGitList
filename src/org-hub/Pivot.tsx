@@ -17,6 +17,7 @@ import { ISimpleListCell } from "azure-devops-ui/List";
 import { Page } from "azure-devops-ui/Page";
 import { Header, TitleSize } from "azure-devops-ui/Header";
 import { Surface, SurfaceBackground } from "azure-devops-ui/Surface";
+import { Pill, PillSize, PillVariant } from 'azure-devops-ui/Pill';
 
 interface IPivotContentState {
     projects?: ArrayItemProvider<TeamProjectReference>;
@@ -123,8 +124,17 @@ class PivotContent extends React.Component<{}, IPivotContentState> {
             <Surface background={SurfaceBackground.neutral}>
                 <Page className="page-pivot flex-grow">
 
-                    <Header title={"My repositories (" + this.state.nbrRepos + ")"}
-                        titleSize={TitleSize.Medium} />
+                    <Header
+                        title={
+                        <div className="flex-row flex-center rhythm-horizontal-8">
+                            <span>My repositories</span>
+                            <Pill size={PillSize.compact} variant={PillVariant.outlined}>
+                            {this.state.nbrRepos}
+                            </Pill>
+                        </div>
+                        }
+                        titleSize={TitleSize.Large}
+                    />
 
                     <div className="git-list-pivot">
                         {!this.state.gitRepos && <p>Loading...</p>}
