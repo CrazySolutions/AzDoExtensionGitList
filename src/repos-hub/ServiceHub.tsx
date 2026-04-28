@@ -9,10 +9,10 @@ import { Header, TitleSize } from "azure-devops-ui/Header";
 import { Page } from "azure-devops-ui/Page";
 import { Surface, SurfaceBackground } from "azure-devops-ui/Surface";
 
-import { Table, ITableColumn, renderSimpleCellValue, ColumnSorting, sortItems, SortOrder } from "azure-devops-ui/Table";
+import { Table, ITableColumn, ITableRow, renderSimpleCellValue, ColumnSorting, sortItems, SortOrder } from "azure-devops-ui/Table";
 import { showRootComponent } from "../common/Common";
 import { GitRepository } from "azure-devops-extension-api/Git/Git";
-import { CommonServiceIds, IProjectPageService, getClient } from "azure-devops-extension-api";
+import { CommonServiceIds, IHostNavigationService, IProjectPageService, getClient } from "azure-devops-extension-api";
 import { ISimpleListCell } from "azure-devops-ui/List";
 import { GitRestClient } from "azure-devops-extension-api/Git";
 import { ArrayItemProvider } from "azure-devops-ui/Utilities/Provider";
@@ -25,6 +25,7 @@ interface IRepositoryServiceHubContentState {
 
 class RepositoryServiceHubContent extends React.Component<{}, IRepositoryServiceHubContentState> {
     private repositories: GitRepository[] = [];
+    private navigationService?: IHostNavigationService;
 
     private sortFunctions: Array<(a: GitRepository, b: GitRepository) => number> = [
         (a, b) => a.name.localeCompare(b.name),
@@ -74,6 +75,8 @@ class RepositoryServiceHubContent extends React.Component<{}, IRepositoryService
     public async componentWillMount() {
         SDK.init();
 
+        this.navigationService = await SDK.getService<IHostNavigationService>(CommonServiceIds.HostNavigationService);
+
         const projectService = await SDK.getService<IProjectPageService>(CommonServiceIds.ProjectPageService);
         const project = await projectService.getProject();
         let repos: GitRepository[] = [];
@@ -88,6 +91,10 @@ class RepositoryServiceHubContent extends React.Component<{}, IRepositoryService
             nbrRepos: this.repositories.length
         });
     }
+
+    private onRowActivate = (event: React.SyntheticEvent<HTMLElement>, row: ITableRow<GitRepository>) => {
+        this.navigationService?.navigate(row.data.webUrl);
+    };
 
     public render(): JSX.Element {
         return (
@@ -104,6 +111,8 @@ class RepositoryServiceHubContent extends React.Component<{}, IRepositoryService
                                 behaviors={[this.sortingBehavior]}
                                 columns={this.state.columns}
                                 itemProvider={this.state.gitRepos}
+                                singleClickActivation={true}
+                                onActivate={this.onRowActivate}
                             />
                         }
                     </div>
