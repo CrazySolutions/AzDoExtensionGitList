@@ -16,6 +16,7 @@ import { ArrayItemProvider } from "azure-devops-ui/Utilities/Provider";
 import { ISimpleListCell } from "azure-devops-ui/List";
 import { Page } from "azure-devops-ui/Page";
 import { Header, TitleSize } from "azure-devops-ui/Header";
+import { Surface, SurfaceBackground } from "azure-devops-ui/Surface";
 
 interface IPivotContentState {
     projects?: ArrayItemProvider<TeamProjectReference>;
@@ -101,26 +102,28 @@ class PivotContent extends React.Component<{}, IPivotContentState> {
 
     public render(): JSX.Element {
         return (
-            <Page className="page-pivot flex-grow">
+            <Surface background={SurfaceBackground.neutral}>
+                <Page className="page-pivot flex-grow">
 
-                <Header title={"My repositories (" + this.state.nbrRepos + ")"}
-                    titleSize={TitleSize.Medium} />
+                    <Header title={"My repositories (" + this.state.nbrRepos + ")"}
+                        titleSize={TitleSize.Medium} />
 
-                <div className="git-list-pivot">
-                    {
-                        !this.state.gitRepos &&
-                        <p>Loading...</p>
-                    }
-                    {
-                        this.state.gitRepos &&
-                        <Table
-                            columns={this.state.columns}
-                            itemProvider={this.state.gitRepos}
-                        />
-                    }
-                </div>
+                    <div className="git-list-pivot">
+                        {
+                            !this.state.gitRepos &&
+                            <p>Loading...</p>
+                        }
+                        {
+                            this.state.gitRepos &&
+                            <Table
+                                columns={this.state.columns}
+                                itemProvider={this.state.gitRepos}
+                            />
+                        }
+                    </div>
 
-            </Page>
+                </Page>
+            </Surface>
         );
     }
 }

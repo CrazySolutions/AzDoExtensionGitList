@@ -7,6 +7,7 @@ import * as SDK from "azure-devops-extension-sdk";
 
 import { Header, TitleSize } from "azure-devops-ui/Header";
 import { Page } from "azure-devops-ui/Page";
+import { Surface, SurfaceBackground } from "azure-devops-ui/Surface";
 
 import { Table, ITableColumn, renderSimpleCell, renderSimpleCellValue, TableRow, ITableRow } from "azure-devops-ui/Table";
 import { showRootComponent } from "../common/Common";
@@ -87,25 +88,27 @@ class RepositoryServiceHubContent extends React.Component<{}, IRepositoryService
 
     public render(): JSX.Element {
         return (
-            <Page className="sample-hub flex-grow">
+            <Surface background={SurfaceBackground.neutral}>
+                <Page className="sample-hub flex-grow">
 
-                <Header title={"Git repositories (" + this.state.nbrRepos + ")"}
-                titleSize={TitleSize.Medium} />
+                    <Header title={"Git repositories (" + this.state.nbrRepos + ")"}
+                        titleSize={TitleSize.Medium} />
 
-                <div className="git-list-hub">
-                    {
-                        !this.state.gitRepos &&
-                        <p>Loading...</p>
-                    }
-                    {
-                        this.state.gitRepos &&
-                        <Table
-                            columns={this.state.columns}
-                            itemProvider={this.state.gitRepos}
-                        />
-                    }
-                </div>
-            </Page>
+                    <div className="git-list-hub">
+                        {
+                            !this.state.gitRepos &&
+                            <p>Loading...</p>
+                        }
+                        {
+                            this.state.gitRepos &&
+                            <Table
+                                columns={this.state.columns}
+                                itemProvider={this.state.gitRepos}
+                            />
+                        }
+                    </div>
+                </Page>
+            </Surface>
         );
     }
 }
