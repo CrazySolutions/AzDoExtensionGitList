@@ -7,11 +7,11 @@ import * as SDK from "azure-devops-extension-sdk";
 
 import { showRootComponent } from "../common/Common";
 
-import { getClient } from "azure-devops-extension-api";
+import { getClient, IHostNavigationService, CommonServiceIds } from "azure-devops-extension-api";
 import { CoreRestClient, TeamProjectReference } from "azure-devops-extension-api/Core";
 import { GitRestClient, GitRepository } from "azure-devops-extension-api/Git";
 
-import { Table, ITableColumn, renderSimpleCellValue, ColumnSorting, sortItems, SortOrder } from "azure-devops-ui/Table";
+import { Table, ITableColumn, ITableRow, renderSimpleCellValue, ColumnSorting, sortItems, SortOrder } from "azure-devops-ui/Table";
 import { ArrayItemProvider } from "azure-devops-ui/Utilities/Provider";
 import { ISimpleListCell } from "azure-devops-ui/List";
 import { Page } from "azure-devops-ui/Page";
@@ -25,8 +25,14 @@ interface IPivotContentState {
     nbrRepos: number;
 }
 
+function projectWebUrl(repo: GitRepository): string {
+    const gitIndex = repo.webUrl.indexOf("/_git/");
+    return gitIndex !== -1 ? repo.webUrl.substring(0, gitIndex) : repo.webUrl;
+}
+
 class PivotContent extends React.Component<{}, IPivotContentState> {
     private repositories: GitRepository[] = [];
+    private navigationService?: IHostNavigationService;
 
     private sortFunctions: Array<(a: GitRepository, b: GitRepository) => number> = [
         (a, b) => a.name.localeCompare(b.name),
@@ -62,7 +68,7 @@ class PivotContent extends React.Component<{}, IPivotContentState> {
                     name: "Project",
                     sortProps: {},
                     renderCell: (rowIndex, columnIndex, tableColumn, tableItem): JSX.Element => {
-                        const content: ISimpleListCell = { text: tableItem.project.name };
+                        const content: ISimpleListCell = { href: projectWebUrl(tableItem), text: tableItem.project.name };
                         return renderSimpleCellValue<any>(columnIndex, tableColumn, content);
                     },
                     width: 200
@@ -90,6 +96,8 @@ class PivotContent extends React.Component<{}, IPivotContentState> {
     }
 
     private async initializeComponent() {
+        this.navigationService = await SDK.getService<IHostNavigationService>(CommonServiceIds.HostNavigationService);
+
         const projects = await getClient(CoreRestClient).getProjects();
         let repositories: GitRepository[] = [];
         for (const project of projects) {
@@ -106,6 +114,10 @@ class PivotContent extends React.Component<{}, IPivotContentState> {
         });
     }
 
+    private onRowActivate = (event: React.SyntheticEvent<HTMLElement>, row: ITableRow<GitRepository>) => {
+        this.navigationService?.navigate(row.data.webUrl);
+    };
+
     public render(): JSX.Element {
         return (
             <Surface background={SurfaceBackground.neutral}>
@@ -121,6 +133,8 @@ class PivotContent extends React.Component<{}, IPivotContentState> {
                                 behaviors={[this.sortingBehavior]}
                                 columns={this.state.columns}
                                 itemProvider={this.state.gitRepos}
+                                singleClickActivation={true}
+                                onActivate={this.onRowActivate}
                             />
                         }
                     </div>
