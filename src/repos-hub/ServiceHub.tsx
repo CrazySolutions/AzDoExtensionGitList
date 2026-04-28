@@ -16,6 +16,7 @@ import { CommonServiceIds, IHostNavigationService, IProjectPageService, getClien
 import { ISimpleListCell } from "azure-devops-ui/List";
 import { GitRestClient } from "azure-devops-extension-api/Git";
 import { ArrayItemProvider } from "azure-devops-ui/Utilities/Provider";
+import { Pill, PillSize, PillVariant } from 'azure-devops-ui/Pill';
 
 interface IRepositoryServiceHubContentState {
     gitRepos?: ArrayItemProvider<GitRepository>;
@@ -101,8 +102,17 @@ class RepositoryServiceHubContent extends React.Component<{}, IRepositoryService
             <Surface background={SurfaceBackground.normal}>
                 <Page className="sample-hub flex-grow">
 
-                    <Header title={"Git repositories (" + this.state.nbrRepos + ")"}
-                        titleSize={TitleSize.Medium} />
+                    <Header
+                        title={
+                        <div className="flex-row flex-center rhythm-horizontal-8">
+                            <span>Git repositories</span>
+                            <Pill size={PillSize.compact} variant={PillVariant.outlined}>
+                            {this.state.nbrRepos}
+                            </Pill>
+                        </div>
+                        }
+                        titleSize={TitleSize.Large}
+                    />
 
                     <div className="git-list-hub">
                         {!this.state.gitRepos && <p>Loading...</p>}
