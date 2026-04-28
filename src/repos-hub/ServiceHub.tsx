@@ -91,7 +91,7 @@ class RepositoryServiceHubContent extends React.Component<{}, IRepositoryService
 
     public render(): JSX.Element {
         return (
-            <Surface background={SurfaceBackground.neutral}>
+            <Surface background={SurfaceBackground.normal}>
                 <Page className="sample-hub flex-grow">
 
                     <Header title={"Git repositories (" + this.state.nbrRepos + ")"}
