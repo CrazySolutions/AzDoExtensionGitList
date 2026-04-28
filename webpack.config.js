@@ -25,22 +25,6 @@ module.exports = {
                 loader: "ts-loader"
             },
             {
-                test: /\.scss$/,
-                use: [
-                    "style-loader",
-                    "css-loader",
-                    "azure-devops-ui/buildScripts/css-variables-loader",
-                    {
-                        loader: "sass-loader",
-                        options: {
-                            sassOptions: {
-                                loadPaths: [path.resolve(__dirname)]
-                            }
-                        }
-                    }
-                ]
-            },
-            {
                 test: /\.css$/,
                 use: ["style-loader", "css-loader"]
             },
