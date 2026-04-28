@@ -1,4 +1,6 @@
-import "./ServiceHub.scss";
+import "./ServiceHub.css";
+import 'azure-devops-ui/Core/override.css';
+import 'azure-devops-ui/Core/core.css';
 
 import * as React from "react";
 import * as SDK from "azure-devops-extension-sdk";
