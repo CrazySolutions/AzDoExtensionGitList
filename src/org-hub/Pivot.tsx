@@ -7,11 +7,11 @@ import * as SDK from "azure-devops-extension-sdk";
 
 import { showRootComponent } from "../common/Common";
 
-import { getClient, IHostNavigationService, CommonServiceIds } from "azure-devops-extension-api";
-import { CoreRestClient, ProjectVisibility, TeamProjectReference } from "azure-devops-extension-api/Core";
-import { GitRestClient, GitRepository } from "azure-devops-extension-api/Git"
+import { getClient } from "azure-devops-extension-api";
+import { CoreRestClient, TeamProjectReference } from "azure-devops-extension-api/Core";
+import { GitRestClient, GitRepository } from "azure-devops-extension-api/Git";
 
-import { Table, ITableColumn, renderSimpleCell, renderSimpleCellValue, TableRow, ITableRow } from "azure-devops-ui/Table";
+import { Table, ITableColumn, renderSimpleCellValue, ColumnSorting, sortItems, SortOrder } from "azure-devops-ui/Table";
 import { ArrayItemProvider } from "azure-devops-ui/Utilities/Provider";
 import { ISimpleListCell } from "azure-devops-ui/List";
 import { Page } from "azure-devops-ui/Page";
@@ -21,58 +21,65 @@ import { Surface, SurfaceBackground } from "azure-devops-ui/Surface";
 interface IPivotContentState {
     projects?: ArrayItemProvider<TeamProjectReference>;
     gitRepos?: ArrayItemProvider<GitRepository>;
-    columns: ITableColumn<any>[];
-    nbrRepos: Number;
+    columns: ITableColumn<GitRepository>[];
+    nbrRepos: number;
 }
 
 class PivotContent extends React.Component<{}, IPivotContentState> {
+    private repositories: GitRepository[] = [];
+
+    private sortFunctions: Array<(a: GitRepository, b: GitRepository) => number> = [
+        (a, b) => a.name.localeCompare(b.name),
+        (a, b) => a.project.name.localeCompare(b.project.name),
+        (a, b) => (Number.isNaN(a.size) ? 0 : a.size) - (Number.isNaN(b.size) ? 0 : b.size)
+    ];
+
+    private sortingBehavior = new ColumnSorting<GitRepository>((columnIndex, sortOrder) => {
+        sortItems(columnIndex, sortOrder, this.sortFunctions, this.state.columns, this.repositories);
+        this.setState({
+            gitRepos: new ArrayItemProvider([...this.repositories]),
+            columns: [...this.state.columns]
+        });
+    });
 
     constructor(props: {}) {
         super(props);
 
         this.state = {
-            columns: [{
-                id: "name",
-                name: "Repository",
-                renderCell: (rowIndex: number, columnIndex: number, tableColumn: ITableColumn<GitRepository>, tableItem: GitRepository): JSX.Element => {
-                    const content: ISimpleListCell = { href: tableItem.webUrl, text: tableItem.name }
-                    return renderSimpleCellValue<any>(columnIndex, tableColumn, content);
+            columns: [
+                {
+                    id: "name",
+                    name: "Repository",
+                    sortProps: { sortOrder: SortOrder.ascending },
+                    renderCell: (rowIndex, columnIndex, tableColumn, tableItem): JSX.Element => {
+                        const content: ISimpleListCell = { href: tableItem.webUrl, text: tableItem.name };
+                        return renderSimpleCellValue<any>(columnIndex, tableColumn, content);
+                    },
+                    width: 700
                 },
-                width: 700
-            },
-            // {
-            //     id: "remoteUrl",
-            //     name: "Remote Url",
-            //     renderCell: renderSimpleCell,
-            //     width: 400
-            // },
-            {
-                id: "project",
-                name: "Project",
-                renderCell: (rowIndex: number, columnIndex: number, tableColumn: ITableColumn<GitRepository>, tableItem: GitRepository): JSX.Element => {
-                    const content: ISimpleListCell = { text: tableItem.project.name }
-                    return renderSimpleCellValue<any>(columnIndex, tableColumn, content);
+                {
+                    id: "project",
+                    name: "Project",
+                    sortProps: {},
+                    renderCell: (rowIndex, columnIndex, tableColumn, tableItem): JSX.Element => {
+                        const content: ISimpleListCell = { text: tableItem.project.name };
+                        return renderSimpleCellValue<any>(columnIndex, tableColumn, content);
+                    },
+                    width: 200
                 },
-                width: 200
-            },
-            {
-                id: "size",
-                name: "Size",
-                renderCell: (rowIndex: number, columnIndex: number, tableColumn: ITableColumn<GitRepository>, tableItem: GitRepository): JSX.Element => {
-                    var size = tableItem.size
-                    if (Number.isNaN(size)) {
-                        size = 0
-                    }
-                    size = (tableItem.size / 1000000) //Size in MB
-                    var suffix = "MB"
-                    if (size > 1000) {
-                        size = size / 1000
-                        suffix = "GB"
-                    }
-                    return renderSimpleCellValue<any>(columnIndex, tableColumn, size.toFixed(2) + suffix);
-                },
-                width: 120
-            }],
+                {
+                    id: "size",
+                    name: "Size",
+                    sortProps: {},
+                    renderCell: (rowIndex, columnIndex, tableColumn, tableItem): JSX.Element => {
+                        const rawSize = Number.isNaN(tableItem.size) ? 0 : tableItem.size;
+                        let size = rawSize / 1000000;
+                        const suffix = size > 1000 ? (size /= 1000, "GB") : "MB";
+                        return renderSimpleCellValue<any>(columnIndex, tableColumn, size.toFixed(2) + suffix);
+                    },
+                    width: 120
+                }
+            ],
             nbrRepos: 0
         };
     }
@@ -84,19 +91,18 @@ class PivotContent extends React.Component<{}, IPivotContentState> {
 
     private async initializeComponent() {
         const projects = await getClient(CoreRestClient).getProjects();
-        var repositories = [] as GitRepository[];
-        for (let i = 0; i < projects.length; i++) {
-            const repos: GitRepository[] = await getClient(GitRestClient).getRepositories(projects[i].name);
+        let repositories: GitRepository[] = [];
+        for (const project of projects) {
+            const repos = await getClient(GitRestClient).getRepositories(project.name);
             repositories = repositories.concat(repos);
         }
-        //Sort the list in alphabetical on repository name
-        repositories = repositories.sort((a, b) => {
-            return a.name.localeCompare(b.name)
-        });
+
+        this.repositories = sortItems(0, SortOrder.ascending, this.sortFunctions, this.state.columns, repositories);
+
         this.setState({
             projects: new ArrayItemProvider(projects),
-            gitRepos: new ArrayItemProvider(repositories),
-            nbrRepos: repositories.length
+            gitRepos: new ArrayItemProvider([...this.repositories]),
+            nbrRepos: this.repositories.length
         });
     }
 
@@ -109,13 +115,10 @@ class PivotContent extends React.Component<{}, IPivotContentState> {
                         titleSize={TitleSize.Medium} />
 
                     <div className="git-list-pivot">
-                        {
-                            !this.state.gitRepos &&
-                            <p>Loading...</p>
-                        }
-                        {
-                            this.state.gitRepos &&
+                        {!this.state.gitRepos && <p>Loading...</p>}
+                        {this.state.gitRepos &&
                             <Table
+                                behaviors={[this.sortingBehavior]}
                                 columns={this.state.columns}
                                 itemProvider={this.state.gitRepos}
                             />
