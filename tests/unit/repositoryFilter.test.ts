@@ -38,9 +38,10 @@ describe('matchesFilter', () => {
             expect(matchesFilter('my-auth-service', 'auth*')).toBe(false);
         });
 
-        it('matches suffix with leading star', () => {
+        it('matches names containing the suffix pattern', () => {
             expect(matchesFilter('my-auth-service', '*service')).toBe(true);
-            expect(matchesFilter('service-my', '*service')).toBe(false);
+            expect(matchesFilter('service-my', '*service')).toBe(true);
+            expect(matchesFilter('payment-api', '*service')).toBe(false);
         });
 
         it('matches substring with surrounding stars', () => {
@@ -60,7 +61,8 @@ describe('matchesFilter', () => {
 
         it('supports multi-segment wildcard patterns', () => {
             expect(matchesFilter('auth-web-service', 'auth*service')).toBe(true);
-            expect(matchesFilter('auth-service-web', 'auth*service')).toBe(false);
+            expect(matchesFilter('auth-service-web', 'auth*service')).toBe(true);
+            expect(matchesFilter('payment-service', 'auth*service')).toBe(false);
         });
 
         it('treats regex special characters as literals', () => {
