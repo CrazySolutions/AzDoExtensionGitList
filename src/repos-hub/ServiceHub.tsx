@@ -11,17 +11,20 @@ import { Surface, SurfaceBackground } from "azure-devops-ui/Surface";
 
 import { Table, ITableColumn, ITableRow, renderSimpleCellValue, ColumnSorting, sortItems, SortOrder } from "azure-devops-ui/Table";
 import { showRootComponent } from "../common/Common";
+import { applyFilter } from "../common/repositoryFilter";
 import { GitRepository } from "azure-devops-extension-api/Git/Git";
 import { CommonServiceIds, IHostNavigationService, IProjectPageService, getClient } from "azure-devops-extension-api";
 import { ISimpleListCell } from "azure-devops-ui/List";
 import { GitRestClient } from "azure-devops-extension-api/Git";
 import { ArrayItemProvider } from "azure-devops-ui/Utilities/Provider";
 import { Pill, PillSize, PillVariant } from 'azure-devops-ui/Pill';
+import { TextField } from "azure-devops-ui/TextField";
 
 interface IRepositoryServiceHubContentState {
     gitRepos?: ArrayItemProvider<GitRepository>;
     columns: ITableColumn<GitRepository>[];
     nbrRepos: number;
+    filterText: string;
 }
 
 class RepositoryServiceHubContent extends React.Component<{}, IRepositoryServiceHubContentState> {
@@ -35,8 +38,10 @@ class RepositoryServiceHubContent extends React.Component<{}, IRepositoryService
 
     private sortingBehavior = new ColumnSorting<GitRepository>((columnIndex, sortOrder) => {
         sortItems(columnIndex, sortOrder, this.sortFunctions, this.state.columns, this.repositories);
+        const filtered = applyFilter(this.repositories, this.state.filterText);
         this.setState({
-            gitRepos: new ArrayItemProvider([...this.repositories]),
+            gitRepos: new ArrayItemProvider(filtered),
+            nbrRepos: filtered.length,
             columns: [...this.state.columns]
         });
     });
@@ -69,7 +74,8 @@ class RepositoryServiceHubContent extends React.Component<{}, IRepositoryService
                     width: 120
                 }
             ],
-            nbrRepos: 0
+            nbrRepos: 0,
+            filterText: ""
         };
     }
 
@@ -97,6 +103,15 @@ class RepositoryServiceHubContent extends React.Component<{}, IRepositoryService
         this.navigationService?.navigate(row.data.webUrl);
     };
 
+    private onFilterChange = (_: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>, value: string) => {
+        const filtered = applyFilter(this.repositories, value);
+        this.setState({
+            filterText: value,
+            gitRepos: new ArrayItemProvider(filtered),
+            nbrRepos: filtered.length
+        });
+    };
+
     public render(): JSX.Element {
         return (
             <Surface background={SurfaceBackground.normal}>
@@ -115,6 +130,14 @@ class RepositoryServiceHubContent extends React.Component<{}, IRepositoryService
                     />
 
                     <div className="git-list-hub">
+                        <div className="repo-filter">
+                            <TextField
+                                value={this.state.filterText}
+                                onChange={this.onFilterChange}
+                                placeholder="Filter repositories..."
+                                prefixIconProps={{ iconName: "Filter" }}
+                            />
+                        </div>
                         {!this.state.gitRepos && <p>Loading...</p>}
                         {this.state.gitRepos &&
                             <Table

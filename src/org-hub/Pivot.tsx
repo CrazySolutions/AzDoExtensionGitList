@@ -6,6 +6,7 @@ import * as React from "react";
 import * as SDK from "azure-devops-extension-sdk";
 
 import { showRootComponent } from "../common/Common";
+import { applyFilter } from "../common/repositoryFilter";
 
 import { getClient, IHostNavigationService, CommonServiceIds } from "azure-devops-extension-api";
 import { CoreRestClient, TeamProjectReference } from "azure-devops-extension-api/Core";
@@ -18,12 +19,14 @@ import { Page } from "azure-devops-ui/Page";
 import { Header, TitleSize } from "azure-devops-ui/Header";
 import { Surface, SurfaceBackground } from "azure-devops-ui/Surface";
 import { Pill, PillSize, PillVariant } from 'azure-devops-ui/Pill';
+import { TextField } from "azure-devops-ui/TextField";
 
 interface IPivotContentState {
     projects?: ArrayItemProvider<TeamProjectReference>;
     gitRepos?: ArrayItemProvider<GitRepository>;
     columns: ITableColumn<GitRepository>[];
     nbrRepos: number;
+    filterText: string;
 }
 
 function projectWebUrl(repo: GitRepository): string {
@@ -43,8 +46,10 @@ class PivotContent extends React.Component<{}, IPivotContentState> {
 
     private sortingBehavior = new ColumnSorting<GitRepository>((columnIndex, sortOrder) => {
         sortItems(columnIndex, sortOrder, this.sortFunctions, this.state.columns, this.repositories);
+        const filtered = applyFilter(this.repositories, this.state.filterText);
         this.setState({
-            gitRepos: new ArrayItemProvider([...this.repositories]),
+            gitRepos: new ArrayItemProvider(filtered),
+            nbrRepos: filtered.length,
             columns: [...this.state.columns]
         });
     });
@@ -87,7 +92,8 @@ class PivotContent extends React.Component<{}, IPivotContentState> {
                     width: 120
                 }
             ],
-            nbrRepos: 0
+            nbrRepos: 0,
+            filterText: ""
         };
     }
 
@@ -119,6 +125,15 @@ class PivotContent extends React.Component<{}, IPivotContentState> {
         this.navigationService?.navigate(row.data.webUrl);
     };
 
+    private onFilterChange = (_: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>, value: string) => {
+        const filtered = applyFilter(this.repositories, value);
+        this.setState({
+            filterText: value,
+            gitRepos: new ArrayItemProvider(filtered),
+            nbrRepos: filtered.length
+        });
+    };
+
     public render(): JSX.Element {
         return (
             <Surface background={SurfaceBackground.neutral}>
@@ -137,6 +152,14 @@ class PivotContent extends React.Component<{}, IPivotContentState> {
                     />
 
                     <div className="git-list-pivot">
+                        <div className="repo-filter">
+                            <TextField
+                                value={this.state.filterText}
+                                onChange={this.onFilterChange}
+                                placeholder="Filter repositories..."
+                                prefixIconProps={{ iconName: "Filter" }}
+                            />
+                        </div>
                         {!this.state.gitRepos && <p>Loading...</p>}
                         {this.state.gitRepos &&
                             <Table
