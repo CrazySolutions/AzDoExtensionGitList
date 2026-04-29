@@ -3,7 +3,7 @@ import { GitRepository } from "azure-devops-extension-api/Git";
 function wildcardToRegex(pattern: string): RegExp {
     const escaped = pattern.replace(/[.+^${}()|[\]\\]/g, '\\$&');
     const regexPattern = escaped.replace(/\*/g, '.*');
-    return new RegExp(`^${regexPattern}$`, 'i');
+    return new RegExp(`^${regexPattern}`, 'i');
 }
 
 export function matchesFilter(name: string, pattern: string): boolean {
