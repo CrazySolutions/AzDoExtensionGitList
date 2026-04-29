@@ -122,7 +122,10 @@ class RepositoryServiceHubContent extends React.Component<{}, IRepositoryService
                         <div className="flex-row flex-center rhythm-horizontal-8">
                             <span>Git repositories</span>
                             <Pill size={PillSize.compact} variant={PillVariant.outlined}>
-                            {this.state.nbrRepos}
+                            {this.state.filterText
+                                ? `${this.state.nbrRepos} of ${this.repositories.length}`
+                                : this.repositories.length
+                            }
                             </Pill>
                         </div>
                         }
