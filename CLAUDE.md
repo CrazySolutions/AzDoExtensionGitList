@@ -6,6 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Keep `overview.md` up to date.** This file is the marketplace listing that end users read before installing the extension. It must always reflect the current state of the extension's functionality. Any time a user-facing feature is added, changed, or removed — new columns, filter behaviour, stale threshold, hub locations, compatibility, etc. — `overview.md` must be updated in the same PR. The same goes for `README.md`.
 
+**Documentation is part of every change.** Whenever a feature is implemented or modified, `README.md`, `overview.md`, and `CLAUDE.md` must all be updated in the same branch before the PR is raised. This is not optional and not a follow-up task — it is part of the definition of done for every change.
+
 ## Project Overview
 
 This is an Azure DevOps (ADO) extension named **Git repository list** (id: `git-repository-list`, publisher: `CrazySolutions`). It displays git repositories in a more convenient way and targets Azure DevOps Services and Server via `Microsoft.VisualStudio.Services` in `azure-devops-extension.json`.
@@ -150,7 +152,7 @@ The vast majority of code must be covered by automated tests. Specifically:
 | Webpack 5 | Bundler — two explicit entry points, outputs to `dist/` |
 | React 16 | UI rendering |
 | Jest 30 + ts-jest 29 | Unit testing (jsdom environment) |
-| `sass` (dart-sass) | SCSS compilation — pure JS, no native build required |
+| CSS | Plain CSS files, loaded via style-loader/css-loader in webpack |
 | `azure-devops-extension-sdk` | SDK init |
 | `azure-devops-ui` | Azure DevOps UI components |
 | `tfx-cli` | Packages the extension into a `.vsix` |
@@ -161,16 +163,17 @@ The vast majority of code must be covered by automated tests. Specifically:
 src/
   common/
     Common.tsx            # Shared showRootComponent helper
+    repositoryFilter.ts   # Wildcard/substring filter logic for repo name filtering
     styles.css            # Shared styles
   org-hub/
     Pivot.tsx             # Entry point for the suite-home tab (collection page)
-    Pivot.html
-    Pivot.scss
+    index.html
+    Pivot.css
     Pivot.json            # Contribution manifest fragment
   repos-hub/
     ServiceHub.tsx        # Entry point for the code-hub-group hub (project repos)
-    context.html
-    ServiceHub.scss
+    index.html
+    ServiceHub.css
     servicehub.json       # Contribution manifest fragment
   declarations.d.ts       # Module declarations for .css and .scss imports
 static/
@@ -184,6 +187,6 @@ tests/
 ### Key design rules
 
 - Webpack entry points are declared explicitly in `webpack.config.js` (`Pivot` → `src/org-hub/Pivot.tsx`, `ServiceHub` → `src/repos-hub/ServiceHub.tsx`). HTML files are copied to `dist/` by `copy-webpack-plugin`. To add a new hub, add an entry and a copy pattern there.
-- SCSS files import azure-devops-ui tokens via `@import "node_modules/azure-devops-ui/Core/_platformCommon.scss"`. The sass-loader is configured with `loadPaths: [project root]` so this resolves correctly.
+- CSS files are processed by style-loader and css-loader in webpack.
 - Tests use `tsconfig.jest.json` (which sets `module: commonjs`) rather than `tsconfig.json` (which targets ES2020 modules for the browser). Do not change `tsconfig.json` module settings for test compatibility — override in `tsconfig.jest.json` instead.
 - Tests enforce a minimum **80% line coverage** threshold (`npm run test:coverage`).
