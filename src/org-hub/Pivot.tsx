@@ -8,6 +8,8 @@ import * as SDK from "azure-devops-extension-sdk";
 import { showRootComponent } from "../common/Common";
 import { applyFilter } from "../common/repositoryFilter";
 import { buildProjectNodes, applyFilterToTree, projectWebUrl, ProjectNode } from "../common/treeUtils";
+import { repoNameCell } from "../common/repoUtils";
+import { formatRelativeDate } from "../common/dateUtils";
 import { RepoTreeView } from "./RepoTreeView";
 
 import { getClient, IHostNavigationService, CommonServiceIds } from "azure-devops-extension-api";
@@ -42,10 +44,14 @@ class PivotContent extends React.Component<{}, IPivotContentState> {
     private repositories: GitRepository[] = [];
     private allProjectNodes: ProjectNode[] = [];
     private navigationService?: IHostNavigationService;
+    private _mounted = false;
+    private lastPushByRepoId: Map<string, Date | null> = new Map();
 
+    // Column indices: 0=name, 1=project, 2=lastPush, 3=size
     private sortFunctions: Array<(a: GitRepository, b: GitRepository) => number> = [
         (a, b) => a.name.localeCompare(b.name),
         (a, b) => a.project.name.localeCompare(b.project.name),
+        (a, b) => (this.lastPushByRepoId.get(a.id)?.getTime() ?? -1) - (this.lastPushByRepoId.get(b.id)?.getTime() ?? -1),
         (a, b) => (Number.isNaN(a.size) ? 0 : a.size) - (Number.isNaN(b.size) ? 0 : b.size)
     ];
 
@@ -69,8 +75,7 @@ class PivotContent extends React.Component<{}, IPivotContentState> {
                     name: "Repository",
                     sortProps: { sortOrder: SortOrder.ascending },
                     renderCell: (rowIndex, columnIndex, tableColumn, tableItem): JSX.Element => {
-                        const content: ISimpleListCell = { text: tableItem.name, iconProps: { iconName: "GitLogo" } };
-                        return renderSimpleCellValue<any>(columnIndex, tableColumn, content);
+                        return renderSimpleCellValue<any>(columnIndex, tableColumn, repoNameCell(tableItem));
                     },
                     width: -1
                 },
@@ -83,6 +88,15 @@ class PivotContent extends React.Component<{}, IPivotContentState> {
                         return renderSimpleCellValue<any>(columnIndex, tableColumn, content);
                     },
                     width: 200
+                },
+                {
+                    id: "lastPush",
+                    name: "Last push",
+                    sortProps: {},
+                    renderCell: (rowIndex, columnIndex, tableColumn, tableItem): JSX.Element => {
+                        return renderSimpleCellValue<any>(columnIndex, tableColumn, formatRelativeDate(this.lastPushByRepoId.get(tableItem.id)));
+                    },
+                    width: 130
                 },
                 {
                     id: "size",
@@ -106,8 +120,13 @@ class PivotContent extends React.Component<{}, IPivotContentState> {
     }
 
     public componentDidMount() {
+        this._mounted = true;
         SDK.init();
         this.initializeComponent();
+    }
+
+    public componentWillUnmount() {
+        this._mounted = false;
     }
 
     private async initializeComponent() {
@@ -129,6 +148,30 @@ class PivotContent extends React.Component<{}, IPivotContentState> {
             nbrRepos: this.repositories.length,
             expandedProjects: new Set(this.allProjectNodes.map(n => n.projectId))
         });
+
+        this.loadPushDates(this.repositories);
+    }
+
+    private async loadPushDates(repos: GitRepository[]): Promise<void> {
+        const BATCH_SIZE = 50;
+        for (let i = 0; i < repos.length; i += BATCH_SIZE) {
+            if (!this._mounted) return;
+            const batch = repos.slice(i, i + BATCH_SIZE);
+            const results = await Promise.all(
+                batch.map(async (repo): Promise<{ id: string; date: Date | null }> => {
+                    try {
+                        const pushes = await getClient(GitRestClient).getPushes(repo.id, repo.project.name, undefined, 1);
+                        return { id: repo.id, date: pushes.length > 0 ? pushes[0].date : null };
+                    } catch {
+                        return { id: repo.id, date: null };
+                    }
+                })
+            );
+            if (!this._mounted) return;
+            results.forEach(({ id, date }) => this.lastPushByRepoId.set(id, date));
+            const filtered = applyFilter(this.repositories, this.state.filterText);
+            this.setState({ gitRepos: new ArrayItemProvider(filtered) });
+        }
     }
 
     private onRowActivate = (event: React.SyntheticEvent<HTMLElement>, row: ITableRow<GitRepository>) => {
@@ -247,6 +290,7 @@ class PivotContent extends React.Component<{}, IPivotContentState> {
                                 onToggleProject={this.onToggleProject}
                                 onNavigateToRepo={(url) => this.navigationService?.navigate(url)}
                                 filterActive={isFiltering}
+                                lastPushByRepoId={this.lastPushByRepoId}
                             />
                         )}
                     </div>

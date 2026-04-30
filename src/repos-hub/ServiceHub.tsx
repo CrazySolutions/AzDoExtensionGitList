@@ -13,6 +13,8 @@ import { Table, ITableColumn, ITableRow, renderSimpleCellValue, ColumnSorting, s
 import { Card } from "azure-devops-ui/Card";
 import { showRootComponent } from "../common/Common";
 import { applyFilter } from "../common/repositoryFilter";
+import { repoNameCell } from "../common/repoUtils";
+import { formatRelativeDate } from "../common/dateUtils";
 import { GitRepository } from "azure-devops-extension-api/Git/Git";
 import { CommonServiceIds, IHostNavigationService, IProjectPageService, getClient } from "azure-devops-extension-api";
 import { ISimpleListCell } from "azure-devops-ui/List";
@@ -31,9 +33,13 @@ interface IRepositoryServiceHubContentState {
 class RepositoryServiceHubContent extends React.Component<{}, IRepositoryServiceHubContentState> {
     private repositories: GitRepository[] = [];
     private navigationService?: IHostNavigationService;
+    private _mounted = false;
+    private lastPushByRepoId: Map<string, Date | null> = new Map();
 
+    // Column indices: 0=name, 1=lastPush, 2=size
     private sortFunctions: Array<(a: GitRepository, b: GitRepository) => number> = [
         (a, b) => a.name.localeCompare(b.name),
+        (a, b) => (this.lastPushByRepoId.get(a.id)?.getTime() ?? -1) - (this.lastPushByRepoId.get(b.id)?.getTime() ?? -1),
         (a, b) => (Number.isNaN(a.size) ? 0 : a.size) - (Number.isNaN(b.size) ? 0 : b.size)
     ];
 
@@ -57,10 +63,18 @@ class RepositoryServiceHubContent extends React.Component<{}, IRepositoryService
                     name: "Repository",
                     sortProps: { sortOrder: SortOrder.ascending },
                     renderCell: (rowIndex, columnIndex, tableColumn, tableItem): JSX.Element => {
-                        const content: ISimpleListCell = { text: tableItem.name, iconProps: { iconName: "GitLogo" } };
-                        return renderSimpleCellValue<any>(columnIndex, tableColumn, content);
+                        return renderSimpleCellValue<any>(columnIndex, tableColumn, repoNameCell(tableItem));
                     },
                     width: -1
+                },
+                {
+                    id: "lastPush",
+                    name: "Last push",
+                    sortProps: {},
+                    renderCell: (rowIndex, columnIndex, tableColumn, tableItem): JSX.Element => {
+                        return renderSimpleCellValue<any>(columnIndex, tableColumn, formatRelativeDate(this.lastPushByRepoId.get(tableItem.id)));
+                    },
+                    width: 130
                 },
                 {
                     id: "size",
@@ -81,6 +95,7 @@ class RepositoryServiceHubContent extends React.Component<{}, IRepositoryService
     }
 
     public async componentWillMount() {
+        this._mounted = true;
         SDK.init();
 
         this.navigationService = await SDK.getService<IHostNavigationService>(CommonServiceIds.HostNavigationService);
@@ -98,6 +113,34 @@ class RepositoryServiceHubContent extends React.Component<{}, IRepositoryService
             gitRepos: new ArrayItemProvider([...this.repositories]),
             nbrRepos: this.repositories.length
         });
+
+        this.loadPushDates(this.repositories);
+    }
+
+    public componentWillUnmount() {
+        this._mounted = false;
+    }
+
+    private async loadPushDates(repos: GitRepository[]): Promise<void> {
+        const BATCH_SIZE = 50;
+        for (let i = 0; i < repos.length; i += BATCH_SIZE) {
+            if (!this._mounted) return;
+            const batch = repos.slice(i, i + BATCH_SIZE);
+            const results = await Promise.all(
+                batch.map(async (repo): Promise<{ id: string; date: Date | null }> => {
+                    try {
+                        const pushes = await getClient(GitRestClient).getPushes(repo.id, repo.project.name, undefined, 1);
+                        return { id: repo.id, date: pushes.length > 0 ? pushes[0].date : null };
+                    } catch {
+                        return { id: repo.id, date: null };
+                    }
+                })
+            );
+            if (!this._mounted) return;
+            results.forEach(({ id, date }) => this.lastPushByRepoId.set(id, date));
+            const filtered = applyFilter(this.repositories, this.state.filterText);
+            this.setState({ gitRepos: new ArrayItemProvider(filtered) });
+        }
     }
 
     private onRowActivate = (event: React.SyntheticEvent<HTMLElement>, row: ITableRow<GitRepository>) => {
