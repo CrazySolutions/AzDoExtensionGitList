@@ -1,12 +1,13 @@
 import * as React from "react";
 import { GitRepository } from "azure-devops-extension-api/Git";
 import { ProjectNode } from "../common/treeUtils";
+import { repoNameCell } from "../common/repoUtils";
+import { formatRelativeDate } from "../common/dateUtils";
 import { Card } from "azure-devops-ui/Card";
 import { Icon } from "azure-devops-ui/Icon";
 import { Pill, PillSize, PillVariant } from "azure-devops-ui/Pill";
 import { Table, ITableColumn, ITableRow, renderSimpleCellValue } from "azure-devops-ui/Table";
 import { ArrayItemProvider } from "azure-devops-ui/Utilities/Provider";
-import { ISimpleListCell } from "azure-devops-ui/List";
 
 type TreeItem =
     | { kind: "project"; node: ProjectNode; expanded: boolean }
@@ -18,6 +19,7 @@ export interface IRepoTreeViewProps {
     onToggleProject: (projectId: string) => void;
     onNavigateToRepo: (url: string) => void;
     filterActive: boolean;
+    lastPushByRepoId: Map<string, Date | null>;
 }
 
 function formatSize(bytes: number): string {
@@ -50,14 +52,17 @@ function buildFlatItems(nodes: ProjectNode[], expandedProjects: Set<string>): Tr
     return items;
 }
 
-function buildColumns(filterActive: boolean): ITableColumn<TreeItem>[] {
+function buildColumns(
+    filterActive: boolean,
+    lastPushByRepoId: Map<string, Date | null>
+): ITableColumn<TreeItem>[] {
     return [
         {
             id: "name",
             name: "Repository",
             renderCell: (_rowIndex, columnIndex, tableColumn, item) => {
                 if (item.kind === "project") {
-                    const content: ISimpleListCell = {
+                    const content = {
                         textNode: (
                             <div className="tree-project-cell">
                                 <Icon iconName={item.expanded ? "ChevronDown" : "ChevronRight"} className="flex-noshrink" />
@@ -71,13 +76,20 @@ function buildColumns(filterActive: boolean): ITableColumn<TreeItem>[] {
                     };
                     return renderSimpleCellValue<any>(columnIndex, tableColumn, content);
                 }
-                const content: ISimpleListCell = {
-                    text: item.repo.name,
-                    iconProps: { iconName: "GitLogo" }
-                };
-                return renderSimpleCellValue<any>(columnIndex, tableColumn, content);
+                return renderSimpleCellValue<any>(columnIndex, tableColumn, repoNameCell(item.repo, true));
             },
             width: -1
+        },
+        {
+            id: "lastPush",
+            name: "Last push",
+            renderCell: (_rowIndex, columnIndex, tableColumn, item) => {
+                if (item.kind === "project") {
+                    return renderSimpleCellValue<any>(columnIndex, tableColumn, "");
+                }
+                return renderSimpleCellValue<any>(columnIndex, tableColumn, formatRelativeDate(lastPushByRepoId.get(item.repo.id)));
+            },
+            width: 130
         },
         {
             id: "size",
@@ -93,9 +105,9 @@ function buildColumns(filterActive: boolean): ITableColumn<TreeItem>[] {
     ];
 }
 
-export function RepoTreeView({ nodes, expandedProjects, onToggleProject, onNavigateToRepo, filterActive }: IRepoTreeViewProps): JSX.Element {
+export function RepoTreeView({ nodes, expandedProjects, onToggleProject, onNavigateToRepo, filterActive, lastPushByRepoId }: IRepoTreeViewProps): JSX.Element {
     const items = buildFlatItems(nodes, expandedProjects);
-    const columns = buildColumns(filterActive);
+    const columns = buildColumns(filterActive, lastPushByRepoId);
 
     const onActivate = (_event: React.SyntheticEvent<HTMLElement>, row: ITableRow<TreeItem>) => {
         const item = row.data;

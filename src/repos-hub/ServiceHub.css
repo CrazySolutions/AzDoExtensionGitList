@@ -3,3 +3,16 @@
     margin: 0 25px;
     padding-bottom: 16px;
 }
+
+.repo-name-cell {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+}
+
+.repo-name-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}

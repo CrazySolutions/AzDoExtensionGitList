@@ -22,12 +22,13 @@ jest.mock("azure-devops-ui/Pill", () => ({
 jest.mock("azure-devops-ui/Table", () => ({
     Table: ({ itemProvider, onActivate, columns }: any) => {
         const items: any[] = itemProvider.value;
+        const nameCol = columns?.find((c: any) => c.id === "name");
+        const lastPushCol = columns?.find((c: any) => c.id === "lastPush");
         return (
             <div data-testid="tree-table">
                 {items.map((item: any, i: number) => {
+                    const nameCell = nameCol?.renderCell?.(i, 0, nameCol, item);
                     if (item.kind === "project") {
-                        const nameCol = columns?.[0];
-                        const nameCell = nameCol?.renderCell?.(i, 0, nameCol, item);
                         return (
                             <div
                                 key={item.node.projectId}
@@ -40,13 +41,15 @@ jest.mock("azure-devops-ui/Table", () => ({
                             </div>
                         );
                     }
+                    const lastPushCell = lastPushCol?.renderCell?.(i, 1, lastPushCol, item);
                     return (
                         <div
                             key={item.repo.id || i}
                             data-testid="repo-row"
                             onClick={() => onActivate?.({}, { data: item })}
                         >
-                            <a href={item.repo.webUrl} data-testid="repo-link">{item.repo.name}</a>
+                            {nameCell}
+                            <span data-testid="last-push-cell">{lastPushCell}</span>
                         </div>
                     );
                 })}
@@ -55,12 +58,9 @@ jest.mock("azure-devops-ui/Table", () => ({
     },
     renderSimpleCellValue: (_colIdx: any, _tableCol: any, content: any) => {
         if (content?.textNode) {
-            return <td>{content.textNode}</td>;
+            return <>{content.textNode}</>;
         }
-        if (content?.href) {
-            return <td><a href={content.href}>{content.text}</a></td>;
-        }
-        return <td>{typeof content === "string" ? content : null}</td>;
+        return <>{typeof content === "string" ? content : null}</>;
     }
 }));
 
@@ -73,8 +73,17 @@ jest.mock("azure-devops-ui/Utilities/Provider", () => ({
     }
 }));
 
-function makeRepo(name: string, id: string, webUrl: string = `https://dev.azure.com/org/proj/_git/${name}`): GitRepository {
-    return { id, name, webUrl, size: 1000000 } as unknown as GitRepository;
+function makeRepo(name: string, id: string, overrides: Partial<GitRepository> = {}): GitRepository {
+    return {
+        id,
+        name,
+        webUrl: `https://dev.azure.com/org/proj/_git/${name}`,
+        size: 1000000,
+        isFork: false,
+        isDisabled: false,
+        isInMaintenance: false,
+        ...overrides
+    } as unknown as GitRepository;
 }
 
 function makeNode(projectId: string, projectName: string, repoNames: string[]): ProjectNode {
@@ -108,7 +117,8 @@ const defaultProps = {
     expandedProjects: new Set<string>(),
     onToggleProject: () => {},
     onNavigateToRepo: () => {},
-    filterActive: false
+    filterActive: false,
+    lastPushByRepoId: new Map<string, Date | null>()
 };
 
 describe('RepoTreeView', () => {
@@ -170,10 +180,10 @@ describe('RepoTreeView', () => {
         expect(projectRows[1].querySelector('[data-icon="ChevronRight"]')).not.toBeNull();
     });
 
-    it('renders the repo link with the correct href', () => {
+    it('shows the repo name in each repo row', () => {
         render(<RepoTreeView nodes={nodes} {...defaultProps} expandedProjects={new Set(['p1'])} />);
-        const links = container.querySelectorAll('[data-testid="repo-link"]');
-        expect(links[0].getAttribute('href')).toBe('https://dev.azure.com/org/proj/_git/auth-service');
+        const repoRows = container.querySelectorAll('[data-testid="repo-row"]');
+        expect(repoRows[0].textContent).toContain('auth-service');
     });
 
     it('shows plain count in pill when filter is not active', () => {
@@ -192,5 +202,48 @@ describe('RepoTreeView', () => {
     it('renders nothing inside the card when nodes is empty', () => {
         render(<RepoTreeView nodes={[]} {...defaultProps} />);
         expect(container.querySelectorAll('[data-testid="project-row"]')).toHaveLength(0);
+    });
+
+    it('shows "—" in last push cell when push date is not yet loaded', () => {
+        render(<RepoTreeView nodes={nodes} {...defaultProps} expandedProjects={new Set(['p1'])} />);
+        const lastPushCells = container.querySelectorAll('[data-testid="last-push-cell"]');
+        expect(lastPushCells[0].textContent).toBe('—');
+    });
+
+    it('shows "Never" in last push cell when repo has no pushes', () => {
+        const map = new Map<string, Date | null>([['p1-0', null]]);
+        render(<RepoTreeView nodes={nodes} {...defaultProps} expandedProjects={new Set(['p1'])} lastPushByRepoId={map} />);
+        const lastPushCells = container.querySelectorAll('[data-testid="last-push-cell"]');
+        expect(lastPushCells[0].textContent).toBe('Never');
+    });
+
+    it('shows relative date in last push cell when push date is loaded', () => {
+        const yesterday = new Date(Date.now() - 86_400_000);
+        const map = new Map<string, Date | null>([['p1-0', yesterday]]);
+        render(<RepoTreeView nodes={nodes} {...defaultProps} expandedProjects={new Set(['p1'])} lastPushByRepoId={map} />);
+        const lastPushCells = container.querySelectorAll('[data-testid="last-push-cell"]');
+        expect(lastPushCells[0].textContent).toBe('Yesterday');
+    });
+
+    it('shows Fork badge for forked repositories', () => {
+        const forkNodes = [makeNode('p1', 'Alpha', [])];
+        const forkRepo = makeRepo('forked-repo', 'p1-0', { isFork: true });
+        forkNodes[0].repos = [forkRepo];
+        forkNodes[0].filteredRepos = [forkRepo];
+        render(<RepoTreeView nodes={forkNodes} {...defaultProps} expandedProjects={new Set(['p1'])} />);
+        const repoRow = container.querySelector('[data-testid="repo-row"]')!;
+        const pills = repoRow.querySelectorAll('[data-testid="pill"]');
+        expect(Array.from(pills).some(p => p.textContent === 'Fork')).toBe(true);
+    });
+
+    it('shows Disabled badge for disabled repositories', () => {
+        const disabledNodes = [makeNode('p1', 'Alpha', [])];
+        const disabledRepo = makeRepo('disabled-repo', 'p1-0', { isDisabled: true });
+        disabledNodes[0].repos = [disabledRepo];
+        disabledNodes[0].filteredRepos = [disabledRepo];
+        render(<RepoTreeView nodes={disabledNodes} {...defaultProps} expandedProjects={new Set(['p1'])} />);
+        const repoRow = container.querySelector('[data-testid="repo-row"]')!;
+        const pills = repoRow.querySelectorAll('[data-testid="pill"]');
+        expect(Array.from(pills).some(p => p.textContent === 'Disabled')).toBe(true);
     });
 });

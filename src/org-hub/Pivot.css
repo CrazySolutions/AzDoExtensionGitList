@@ -29,6 +29,20 @@
 }
 
 
+/* Repository name cell with optional status badges */
+.repo-name-cell {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+}
+
+.repo-name-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 /* Tree view */
 .tree-project-cell {
     display: flex;
@@ -36,6 +50,11 @@
     gap: 6px;
     width: 100%;
     cursor: pointer;
+}
+
+.tree-repo-indent {
+    width: 20px;
+    flex-shrink: 0;
 }
 
 .tree-project-name {
