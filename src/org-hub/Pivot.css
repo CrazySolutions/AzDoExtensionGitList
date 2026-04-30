@@ -1,4 +1,47 @@
 .git-list-pivot {
     font-size: 0.875rem;
     margin: 0 25px;
+    padding-bottom: 16px;
+}
+
+/* Filter row with view toggle buttons */
+.repo-filter--with-toggle {
+    display: flex;
+    align-items: center;
+}
+
+.view-toggle-buttons {
+    display: flex;
+    flex-direction: row;
+    gap: 4px;
+    margin-left: 8px;
+    flex-shrink: 0;
+}
+
+.view-toggle-wrapper {
+    display: flex;
+    border-radius: 2px;
+}
+
+.view-toggle-wrapper--active {
+    box-shadow: 0 0 0 2px currentColor;
+    border-radius: 2px;
+}
+
+
+/* Tree view */
+.tree-project-cell {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    cursor: pointer;
+}
+
+.tree-project-name {
+    font-weight: 600;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }

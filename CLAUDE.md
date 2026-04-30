@@ -8,6 +8,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Documentation is part of every change.** Whenever a feature is implemented or modified, `README.md`, `overview.md`, and `CLAUDE.md` must all be updated in the same branch before the PR is raised. This is not optional and not a follow-up task — it is part of the definition of done for every change.
 
+**All UI must feel like a natural part of Azure DevOps.** Every design decision — spacing, typography, colour, row height, hover states, dividers, icons — must follow the ADO design language. Use ADO design tokens (`--palette-*`, `--color-*`) rather than hard-coded values. Reach for `azure-devops-ui` components before writing custom HTML. When in doubt, look at how ADO itself renders a similar pattern (branches list, work item list, table) and match it. Never introduce visual styles that feel foreign to the ADO shell.
+
 ## Project Overview
 
 This is an Azure DevOps (ADO) extension named **Git repository list** (id: `git-repository-list`, publisher: `CrazySolutions`). It displays git repositories in a more convenient way and targets Azure DevOps Services and Server via `Microsoft.VisualStudio.Services` in `azure-devops-extension.json`.
@@ -164,9 +166,11 @@ src/
   common/
     Common.tsx            # Shared showRootComponent helper
     repositoryFilter.ts   # Wildcard/substring filter logic for repo name filtering
+    treeUtils.ts          # ProjectNode type, buildProjectNodes, applyFilterToTree
     styles.css            # Shared styles
   org-hub/
     Pivot.tsx             # Entry point for the suite-home tab (collection page)
+    RepoTreeView.tsx      # Tree view component — repos grouped by project
     index.html
     Pivot.css
     Pivot.json            # Contribution manifest fragment
@@ -190,3 +194,13 @@ tests/
 - CSS files are processed by style-loader and css-loader in webpack.
 - Tests use `tsconfig.jest.json` (which sets `module: commonjs`) rather than `tsconfig.json` (which targets ES2020 modules for the browser). Do not change `tsconfig.json` module settings for test compatibility — override in `tsconfig.jest.json` instead.
 - Tests enforce a minimum **80% line coverage** threshold (`npm run test:coverage`).
+
+### Tree view architecture
+
+The organisation-level hub (`Pivot.tsx`) supports two view modes toggled by the user: `"list"` (default, native ADO `Table` component) and `"tree"` (`RepoTreeView` component).
+
+- `treeUtils.ts` owns the `ProjectNode` shape and two pure functions: `buildProjectNodes` (groups repos by `project.id`, sorts alphabetically) and `applyFilterToTree` (runs the repository filter per project, drops empty nodes).
+- `RepoTreeView.tsx` is a stateless functional component that receives pre-computed `nodes`, `expandedProjects` (a `Set<string>`), and callbacks. It renders a header row and one project node per entry.
+- Expand state is split across two `Set<string>` instances in `Pivot` state: `expandedProjects` (user's manual choices, all projects seeded on load) and `filterExpandedProjects` (auto-computed when filter is active). `activeExpandedProjects()` returns whichever is current.
+- The `azure-devops-ui` package does **not** include a Tree component. The visual treatment (folder background `--palette-neutral-4`, 36px row height, border separators, inset chevrons) is implemented in plain CSS to match the ADO branches list.
+- View toggle buttons are always `subtle={true}`; the active state is indicated with `box-shadow: inset 0 0 0 2px` to avoid layout shift from border/padding changes.
