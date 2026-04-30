@@ -7,6 +7,8 @@ import * as SDK from "azure-devops-extension-sdk";
 
 import { showRootComponent } from "../common/Common";
 import { applyFilter } from "../common/repositoryFilter";
+import { buildProjectNodes, applyFilterToTree, projectWebUrl, ProjectNode } from "../common/treeUtils";
+import { RepoTreeView } from "./RepoTreeView";
 
 import { getClient, IHostNavigationService, CommonServiceIds } from "azure-devops-extension-api";
 import { CoreRestClient, TeamProjectReference } from "azure-devops-extension-api/Core";
@@ -15,11 +17,15 @@ import { GitRestClient, GitRepository } from "azure-devops-extension-api/Git";
 import { Table, ITableColumn, ITableRow, renderSimpleCellValue, ColumnSorting, sortItems, SortOrder } from "azure-devops-ui/Table";
 import { ArrayItemProvider } from "azure-devops-ui/Utilities/Provider";
 import { ISimpleListCell } from "azure-devops-ui/List";
+import { Card } from "azure-devops-ui/Card";
 import { Page } from "azure-devops-ui/Page";
 import { Header, TitleSize } from "azure-devops-ui/Header";
 import { Surface, SurfaceBackground } from "azure-devops-ui/Surface";
 import { Pill, PillSize, PillVariant } from 'azure-devops-ui/Pill';
 import { TextField } from "azure-devops-ui/TextField";
+import { Button } from "azure-devops-ui/Button";
+
+type ViewMode = "list" | "tree";
 
 interface IPivotContentState {
     projects?: ArrayItemProvider<TeamProjectReference>;
@@ -27,15 +33,14 @@ interface IPivotContentState {
     columns: ITableColumn<GitRepository>[];
     nbrRepos: number;
     filterText: string;
-}
-
-function projectWebUrl(repo: GitRepository): string {
-    const gitIndex = repo.webUrl.indexOf("/_git/");
-    return gitIndex !== -1 ? repo.webUrl.substring(0, gitIndex) : repo.webUrl;
+    viewMode: ViewMode;
+    expandedProjects: Set<string>;
+    filterExpandedProjects: Set<string>;
 }
 
 class PivotContent extends React.Component<{}, IPivotContentState> {
     private repositories: GitRepository[] = [];
+    private allProjectNodes: ProjectNode[] = [];
     private navigationService?: IHostNavigationService;
 
     private sortFunctions: Array<(a: GitRepository, b: GitRepository) => number> = [
@@ -64,10 +69,10 @@ class PivotContent extends React.Component<{}, IPivotContentState> {
                     name: "Repository",
                     sortProps: { sortOrder: SortOrder.ascending },
                     renderCell: (rowIndex, columnIndex, tableColumn, tableItem): JSX.Element => {
-                        const content: ISimpleListCell = { href: tableItem.webUrl, text: tableItem.name };
+                        const content: ISimpleListCell = { text: tableItem.name, iconProps: { iconName: "GitLogo" } };
                         return renderSimpleCellValue<any>(columnIndex, tableColumn, content);
                     },
-                    width: 700
+                    width: -1
                 },
                 {
                     id: "project",
@@ -93,7 +98,10 @@ class PivotContent extends React.Component<{}, IPivotContentState> {
                 }
             ],
             nbrRepos: 0,
-            filterText: ""
+            filterText: "",
+            viewMode: "list",
+            expandedProjects: new Set(),
+            filterExpandedProjects: new Set()
         };
     }
 
@@ -113,11 +121,13 @@ class PivotContent extends React.Component<{}, IPivotContentState> {
         }
 
         this.repositories = sortItems(0, SortOrder.ascending, this.sortFunctions, this.state.columns, repositories);
+        this.allProjectNodes = buildProjectNodes(this.repositories);
 
         this.setState({
             projects: new ArrayItemProvider(projects),
             gitRepos: new ArrayItemProvider([...this.repositories]),
-            nbrRepos: this.repositories.length
+            nbrRepos: this.repositories.length,
+            expandedProjects: new Set(this.allProjectNodes.map(n => n.projectId))
         });
     }
 
@@ -127,14 +137,49 @@ class PivotContent extends React.Component<{}, IPivotContentState> {
 
     private onFilterChange = (_: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>, value: string) => {
         const filtered = applyFilter(this.repositories, value);
+
+        const filterExpandedProjects = value
+            ? new Set(applyFilterToTree(this.allProjectNodes, value).map(n => n.projectId))
+            : new Set<string>();
+
         this.setState({
             filterText: value,
             gitRepos: new ArrayItemProvider(filtered),
-            nbrRepos: filtered.length
+            nbrRepos: filtered.length,
+            filterExpandedProjects
         });
     };
 
+    private onToggleViewMode = (mode: ViewMode) => {
+        this.setState({ viewMode: mode });
+    };
+
+    private onToggleProject = (projectId: string) => {
+        this.setState(prevState => {
+            const next = new Set(prevState.expandedProjects);
+            next.has(projectId) ? next.delete(projectId) : next.add(projectId);
+            return { expandedProjects: next };
+        });
+    };
+
+    private pillContent(): string | number {
+        const { filterText, nbrRepos } = this.state;
+        if (filterText) {
+            return `${nbrRepos} of ${this.repositories.length}`;
+        }
+        return this.repositories.length;
+    }
+
+    private activeExpandedProjects(): Set<string> {
+        return this.state.filterText
+            ? this.state.filterExpandedProjects
+            : this.state.expandedProjects;
+    }
+
     public render(): JSX.Element {
+        const { viewMode, filterText, gitRepos } = this.state;
+        const isFiltering = filterText !== "";
+
         return (
             <Surface background={SurfaceBackground.neutral}>
                 <Page className="page-pivot flex-grow">
@@ -144,10 +189,7 @@ class PivotContent extends React.Component<{}, IPivotContentState> {
                         <div className="flex-row flex-center rhythm-horizontal-8">
                             <span>My repositories</span>
                             <Pill size={PillSize.compact} variant={PillVariant.outlined}>
-                            {this.state.filterText
-                                ? `${this.state.nbrRepos} of ${this.repositories.length}`
-                                : this.repositories.length
-                            }
+                                {this.pillContent()}
                             </Pill>
                         </div>
                         }
@@ -155,24 +197,58 @@ class PivotContent extends React.Component<{}, IPivotContentState> {
                     />
 
                     <div className="git-list-pivot">
-                        <div className="repo-filter">
+                        <div className="repo-filter repo-filter--with-toggle">
                             <TextField
-                                value={this.state.filterText}
+                                value={filterText}
                                 onChange={this.onFilterChange}
                                 placeholder="Filter repositories..."
                                 prefixIconProps={{ iconName: "Filter" }}
                             />
+                            <div className="view-toggle-buttons">
+                                <div className={`view-toggle-wrapper${viewMode === "list" ? " view-toggle-wrapper--active" : ""}`}>
+                                    <Button
+                                        subtle={true}
+                                        iconProps={{ iconName: "BulletedList" }}
+                                        ariaLabel="List view"
+                                        ariaPressed={viewMode === "list"}
+                                        onClick={() => this.onToggleViewMode("list")}
+                                    />
+                                </div>
+                                <div className={`view-toggle-wrapper${viewMode === "tree" ? " view-toggle-wrapper--active" : ""}`}>
+                                    <Button
+                                        subtle={true}
+                                        iconProps={{ iconName: "Group" }}
+                                        ariaLabel="Tree view"
+                                        ariaPressed={viewMode === "tree"}
+                                        onClick={() => this.onToggleViewMode("tree")}
+                                    />
+                                </div>
+                            </div>
                         </div>
-                        {!this.state.gitRepos && <p>Loading...</p>}
-                        {this.state.gitRepos &&
-                            <Table
-                                behaviors={[this.sortingBehavior]}
-                                columns={this.state.columns}
-                                itemProvider={this.state.gitRepos}
-                                singleClickActivation={true}
-                                onActivate={this.onRowActivate}
+
+                        {!gitRepos && <p>Loading...</p>}
+
+                        {gitRepos && viewMode === "list" && (
+                            <Card className="flex-column bolt-table-card bolt-card-white" contentProps={{ contentPadding: false }}>
+                                <Table
+                                    behaviors={[this.sortingBehavior]}
+                                    columns={this.state.columns}
+                                    itemProvider={gitRepos}
+                                    singleClickActivation={true}
+                                    onActivate={this.onRowActivate}
+                                />
+                            </Card>
+                        )}
+
+                        {gitRepos && viewMode === "tree" && (
+                            <RepoTreeView
+                                nodes={applyFilterToTree(this.allProjectNodes, filterText)}
+                                expandedProjects={this.activeExpandedProjects()}
+                                onToggleProject={this.onToggleProject}
+                                onNavigateToRepo={(url) => this.navigationService?.navigate(url)}
+                                filterActive={isFiltering}
                             />
-                        }
+                        )}
                     </div>
 
                 </Page>

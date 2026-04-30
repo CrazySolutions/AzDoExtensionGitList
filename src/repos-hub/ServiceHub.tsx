@@ -10,6 +10,7 @@ import { Page } from "azure-devops-ui/Page";
 import { Surface, SurfaceBackground } from "azure-devops-ui/Surface";
 
 import { Table, ITableColumn, ITableRow, renderSimpleCellValue, ColumnSorting, sortItems, SortOrder } from "azure-devops-ui/Table";
+import { Card } from "azure-devops-ui/Card";
 import { showRootComponent } from "../common/Common";
 import { applyFilter } from "../common/repositoryFilter";
 import { GitRepository } from "azure-devops-extension-api/Git/Git";
@@ -56,10 +57,10 @@ class RepositoryServiceHubContent extends React.Component<{}, IRepositoryService
                     name: "Repository",
                     sortProps: { sortOrder: SortOrder.ascending },
                     renderCell: (rowIndex, columnIndex, tableColumn, tableItem): JSX.Element => {
-                        const content: ISimpleListCell = { href: tableItem.webUrl, text: tableItem.name };
+                        const content: ISimpleListCell = { text: tableItem.name, iconProps: { iconName: "GitLogo" } };
                         return renderSimpleCellValue<any>(columnIndex, tableColumn, content);
                     },
-                    width: 900
+                    width: -1
                 },
                 {
                     id: "size",
@@ -142,15 +143,17 @@ class RepositoryServiceHubContent extends React.Component<{}, IRepositoryService
                             />
                         </div>
                         {!this.state.gitRepos && <p>Loading...</p>}
-                        {this.state.gitRepos &&
-                            <Table
-                                behaviors={[this.sortingBehavior]}
-                                columns={this.state.columns}
-                                itemProvider={this.state.gitRepos}
-                                singleClickActivation={true}
-                                onActivate={this.onRowActivate}
-                            />
-                        }
+                        {this.state.gitRepos && (
+                            <Card className="flex-column bolt-table-card bolt-card-white" contentProps={{ contentPadding: false }}>
+                                <Table
+                                    behaviors={[this.sortingBehavior]}
+                                    columns={this.state.columns}
+                                    itemProvider={this.state.gitRepos}
+                                    singleClickActivation={true}
+                                    onActivate={this.onRowActivate}
+                                />
+                            </Card>
+                        )}
                     </div>
                 </Page>
             </Surface>

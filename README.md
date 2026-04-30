@@ -46,7 +46,12 @@ To generate a coverage report (minimum 80% line coverage is enforced):
 
 ## My repositories (organisation level)
 
-Available from the collection/organisation start page, this hub lists every git repository across all projects the current user has access to. Columns show the repository name, the project it belongs to, and its size. All columns are sortable.
+Available from the collection/organisation start page, this hub lists every git repository across all projects the current user has access to.
+
+Two view modes are available via the toggle buttons at the top right of the filter bar:
+
+- **List view** (default) — a flat table with sortable columns: repository name, project, and size.
+- **Tree view** — repositories grouped by project, with collapsible project nodes. Each project header shows a count pill (or `3 of 10` when filtering). Styled to match the ADO branches list.
 
 ## Repository list (project level)
 
@@ -59,7 +64,7 @@ Both hubs provide a filter input at the top of the page to narrow the repository
 - **Plain text** — case-insensitive substring match. Typing `auth` shows all repositories whose name contains "auth".
 - **Wildcard (`*`)** — glob-style matching. `auth*` matches names starting with "auth"; `*-service` matches names that contain "-service".
 
-The count pill next to the hub title reflects the current view — `42` when unfiltered, `5 of 42` when a filter is active.
+The count pill next to the hub title reflects the current view — `42` when unfiltered, `5 of 42` when a filter is active. In tree view, filtering automatically expands projects that contain matching repositories.
 
 # References
 
