@@ -8,6 +8,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Documentation is part of every change.** Whenever a feature is implemented or modified, `README.md`, `overview.md`, and `CLAUDE.md` must all be updated in the same branch before the PR is raised. This is not optional and not a follow-up task — it is part of the definition of done for every change.
 
+**ADO REST API version must not exceed 7.1.** The extension targets Azure DevOps Server (on-premises) which only supports REST API up to version 7.1. The `azure-devops-extension-api` package hardcodes `7.2-preview` in all its client methods, so every method we call is overridden in `src/common/apiClients.ts` using `GitClient71` and `CoreClient71` — subclasses that force `apiVersion: "7.1"`. Never call `getClient(GitRestClient)` or `getClient(CoreRestClient)` directly; always use these wrappers. If a new API method is needed, add an override for it in `apiClients.ts` with `apiVersion: "7.1"`.
+
 **All UI must feel like a natural part of Azure DevOps.** Every design decision — spacing, typography, colour, row height, hover states, dividers, icons — must follow the ADO design language. Use ADO design tokens (`--palette-*`, `--color-*`) rather than hard-coded values. Reach for `azure-devops-ui` components before writing custom HTML. When in doubt, look at how ADO itself renders a similar pattern (branches list, work item list, table) and match it. Never introduce visual styles that feel foreign to the ADO shell.
 
 ## Project Overview

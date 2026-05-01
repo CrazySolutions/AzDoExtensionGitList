@@ -13,8 +13,9 @@ import { formatRelativeDate } from "../common/dateUtils";
 import { RepoTreeView } from "./RepoTreeView";
 
 import { getClient, IHostNavigationService, CommonServiceIds } from "azure-devops-extension-api";
-import { CoreRestClient, TeamProjectReference } from "azure-devops-extension-api/Core";
-import { GitRestClient, GitRepository } from "azure-devops-extension-api/Git";
+import { TeamProjectReference } from "azure-devops-extension-api/Core";
+import { GitRepository } from "azure-devops-extension-api/Git";
+import { GitClient71, CoreClient71 } from "../common/apiClients";
 
 import { Table, ITableColumn, ITableRow, renderSimpleCellValue, ColumnSorting, sortItems, SortOrder } from "azure-devops-ui/Table";
 import { ArrayItemProvider } from "azure-devops-ui/Utilities/Provider";
@@ -132,10 +133,10 @@ class PivotContent extends React.Component<{}, IPivotContentState> {
     private async initializeComponent() {
         this.navigationService = await SDK.getService<IHostNavigationService>(CommonServiceIds.HostNavigationService);
 
-        const projects = await getClient(CoreRestClient).getProjects();
+        const projects = await getClient(CoreClient71).getProjects();
         let repositories: GitRepository[] = [];
         for (const project of projects) {
-            const repos = await getClient(GitRestClient).getRepositories(project.name);
+            const repos = await getClient(GitClient71).getRepositories(project.name);
             repositories = repositories.concat(repos);
         }
 
@@ -160,7 +161,7 @@ class PivotContent extends React.Component<{}, IPivotContentState> {
             const results = await Promise.all(
                 batch.map(async (repo): Promise<{ id: string; date: Date | null }> => {
                     try {
-                        const pushes = await getClient(GitRestClient).getPushes(repo.id, repo.project.name, undefined, 1);
+                        const pushes = await getClient(GitClient71).getPushes(repo.id, repo.project.name, undefined, 1);
                         return { id: repo.id, date: pushes.length > 0 ? pushes[0].date : null };
                     } catch {
                         return { id: repo.id, date: null };

@@ -18,7 +18,7 @@ import { formatRelativeDate } from "../common/dateUtils";
 import { GitRepository } from "azure-devops-extension-api/Git/Git";
 import { CommonServiceIds, IHostNavigationService, IProjectPageService, getClient } from "azure-devops-extension-api";
 import { ISimpleListCell } from "azure-devops-ui/List";
-import { GitRestClient } from "azure-devops-extension-api/Git";
+import { GitClient71 } from "../common/apiClients";
 import { ArrayItemProvider } from "azure-devops-ui/Utilities/Provider";
 import { Pill, PillSize, PillVariant } from 'azure-devops-ui/Pill';
 import { TextField } from "azure-devops-ui/TextField";
@@ -104,7 +104,7 @@ class RepositoryServiceHubContent extends React.Component<{}, IRepositoryService
         const project = await projectService.getProject();
         let repos: GitRepository[] = [];
         if (project) {
-            repos = await getClient(GitRestClient).getRepositories(project.name);
+            repos = await getClient(GitClient71).getRepositories(project.name);
         }
 
         this.repositories = sortItems(0, SortOrder.ascending, this.sortFunctions, this.state.columns, repos);
@@ -129,7 +129,7 @@ class RepositoryServiceHubContent extends React.Component<{}, IRepositoryService
             const results = await Promise.all(
                 batch.map(async (repo): Promise<{ id: string; date: Date | null }> => {
                     try {
-                        const pushes = await getClient(GitRestClient).getPushes(repo.id, repo.project.name, undefined, 1);
+                        const pushes = await getClient(GitClient71).getPushes(repo.id, repo.project.name, undefined, 1);
                         return { id: repo.id, date: pushes.length > 0 ? pushes[0].date : null };
                     } catch {
                         return { id: repo.id, date: null };
