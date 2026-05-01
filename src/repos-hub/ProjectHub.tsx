@@ -1,4 +1,4 @@
-import "./ServiceHub.css";
+import "./ProjectHub.css";
 import 'azure-devops-ui/Core/override.css';
 import 'azure-devops-ui/Core/core.css';
 
@@ -23,14 +23,14 @@ import { ArrayItemProvider } from "azure-devops-ui/Utilities/Provider";
 import { Pill, PillSize, PillVariant } from 'azure-devops-ui/Pill';
 import { TextField } from "azure-devops-ui/TextField";
 
-interface IRepositoryServiceHubContentState {
+interface IProjectHubState {
     gitRepos?: ArrayItemProvider<GitRepository>;
     columns: ITableColumn<GitRepository>[];
     nbrRepos: number;
     filterText: string;
 }
 
-class RepositoryServiceHubContent extends React.Component<{}, IRepositoryServiceHubContentState> {
+class ProjectHubContent extends React.Component<{}, IProjectHubState> {
     private repositories: GitRepository[] = [];
     private navigationService?: IHostNavigationService;
     private _mounted = false;
@@ -159,7 +159,7 @@ class RepositoryServiceHubContent extends React.Component<{}, IRepositoryService
     public render(): JSX.Element {
         return (
             <Surface background={SurfaceBackground.normal}>
-                <Page className="sample-hub flex-grow">
+                <Page className="page-project-hub flex-grow">
 
                     <Header
                         title={
@@ -176,7 +176,7 @@ class RepositoryServiceHubContent extends React.Component<{}, IRepositoryService
                         titleSize={TitleSize.Large}
                     />
 
-                    <div className="git-list-hub">
+                    <div className="git-list-project-hub">
                         <div className="repo-filter">
                             <TextField
                                 value={this.state.filterText}
@@ -204,4 +204,4 @@ class RepositoryServiceHubContent extends React.Component<{}, IRepositoryService
     }
 }
 
-showRootComponent(<RepositoryServiceHubContent />);
+showRootComponent(<ProjectHubContent />);

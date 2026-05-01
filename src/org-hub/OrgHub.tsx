@@ -1,4 +1,4 @@
-import "./Pivot.css";
+import "./OrgHub.css";
 import 'azure-devops-ui/Core/override.css';
 import 'azure-devops-ui/Core/core.css';
 
@@ -30,7 +30,7 @@ import { Button } from "azure-devops-ui/Button";
 
 type ViewMode = "list" | "tree";
 
-interface IPivotContentState {
+interface IOrgHubState {
     projects?: ArrayItemProvider<TeamProjectReference>;
     gitRepos?: ArrayItemProvider<GitRepository>;
     columns: ITableColumn<GitRepository>[];
@@ -41,7 +41,7 @@ interface IPivotContentState {
     filterExpandedProjects: Set<string>;
 }
 
-class PivotContent extends React.Component<{}, IPivotContentState> {
+class OrgHubContent extends React.Component<{}, IOrgHubState> {
     private repositories: GitRepository[] = [];
     private allProjectNodes: ProjectNode[] = [];
     private navigationService?: IHostNavigationService;
@@ -226,7 +226,7 @@ class PivotContent extends React.Component<{}, IPivotContentState> {
 
         return (
             <Surface background={SurfaceBackground.neutral}>
-                <Page className="page-pivot flex-grow">
+                <Page className="page-org-hub flex-grow">
 
                     <Header
                         title={
@@ -240,7 +240,7 @@ class PivotContent extends React.Component<{}, IPivotContentState> {
                         titleSize={TitleSize.Large}
                     />
 
-                    <div className="git-list-pivot">
+                    <div className="git-list-org-hub">
                         <div className="repo-filter repo-filter--with-toggle">
                             <TextField
                                 value={filterText}
@@ -302,4 +302,4 @@ class PivotContent extends React.Component<{}, IPivotContentState> {
     }
 }
 
-showRootComponent(<PivotContent />);
+showRootComponent(<OrgHubContent />);

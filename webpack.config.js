@@ -3,8 +3,8 @@ const CopyWebpackPlugin = require("copy-webpack-plugin");
 
 module.exports = {
     entry: {
-        "org-hub": "./src/org-hub/Pivot.tsx",
-        "repos-hub": "./src/repos-hub/ServiceHub.tsx"
+        "org-hub": "./src/org-hub/OrgHub.tsx",
+        "repos-hub": "./src/repos-hub/ProjectHub.tsx"
     },
     output: {
         filename: "[name]/index.js"
