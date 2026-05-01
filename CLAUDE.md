@@ -169,21 +169,22 @@ src/
     Common.tsx            # Shared showRootComponent helper
     repositoryFilter.ts   # Wildcard/substring filter logic for repo name filtering
     treeUtils.ts          # ProjectNode type, buildProjectNodes, applyFilterToTree
+    repoUtils.tsx         # repoNameCell — shared repo name cell renderer
+    dateUtils.ts          # formatRelativeDate utility
+    apiClients.ts         # GitClient71, CoreClient71 — API version 7.1 wrappers
     styles.css            # Shared styles
   org-hub/
-    Pivot.tsx             # Entry point for the suite-home tab (collection page)
+    OrgHub.tsx            # Entry point for the suite-home tab (collection page)
     RepoTreeView.tsx      # Tree view component — repos grouped by project
     index.html
-    Pivot.css
-    Pivot.json            # Contribution manifest fragment
+    OrgHub.css
   repos-hub/
-    ServiceHub.tsx        # Entry point for the code-hub-group hub (project repos)
+    ProjectHub.tsx        # Entry point for the code-hub-group hub (project repos)
     index.html
-    ServiceHub.css
-    servicehub.json       # Contribution manifest fragment
+    ProjectHub.css
   declarations.d.ts       # Module declarations for .css and .scss imports
 static/
-  git-icon-128.png        # Hub icon referenced in servicehub.json
+  git-icon-128.png        # Hub icon
 tests/
   unit/
   __mocks__/
@@ -192,17 +193,17 @@ tests/
 
 ### Key design rules
 
-- Webpack entry points are declared explicitly in `webpack.config.js` (`Pivot` → `src/org-hub/Pivot.tsx`, `ServiceHub` → `src/repos-hub/ServiceHub.tsx`). HTML files are copied to `dist/` by `copy-webpack-plugin`. To add a new hub, add an entry and a copy pattern there.
+- Webpack entry points are declared explicitly in `webpack.config.js` (`org-hub` → `src/org-hub/OrgHub.tsx`, `repos-hub` → `src/repos-hub/ProjectHub.tsx`). HTML files are copied to `dist/` by `copy-webpack-plugin`. To add a new hub, add an entry and a copy pattern there.
 - CSS files are processed by style-loader and css-loader in webpack.
 - Tests use `tsconfig.jest.json` (which sets `module: commonjs`) rather than `tsconfig.json` (which targets ES2020 modules for the browser). Do not change `tsconfig.json` module settings for test compatibility — override in `tsconfig.jest.json` instead.
 - Tests enforce a minimum **80% line coverage** threshold (`npm run test:coverage`).
 
 ### Tree view architecture
 
-The organisation-level hub (`Pivot.tsx`) supports two view modes toggled by the user: `"list"` (default, native ADO `Table` component) and `"tree"` (`RepoTreeView` component).
+The organisation-level hub (`OrgHub.tsx`) supports two view modes toggled by the user: `"list"` (default, native ADO `Table` component) and `"tree"` (`RepoTreeView` component).
 
 - `treeUtils.ts` owns the `ProjectNode` shape and two pure functions: `buildProjectNodes` (groups repos by `project.id`, sorts alphabetically) and `applyFilterToTree` (runs the repository filter per project, drops empty nodes).
 - `RepoTreeView.tsx` is a stateless functional component that receives pre-computed `nodes`, `expandedProjects` (a `Set<string>`), and callbacks. It renders a header row and one project node per entry.
-- Expand state is split across two `Set<string>` instances in `Pivot` state: `expandedProjects` (user's manual choices, all projects seeded on load) and `filterExpandedProjects` (auto-computed when filter is active). `activeExpandedProjects()` returns whichever is current.
+- Expand state is split across two `Set<string>` instances in `OrgHubContent` state: `expandedProjects` (user's manual choices, all projects seeded on load) and `filterExpandedProjects` (auto-computed when filter is active). `activeExpandedProjects()` returns whichever is current.
 - The `azure-devops-ui` package does **not** include a Tree component. The visual treatment (folder background `--palette-neutral-4`, 36px row height, border separators, inset chevrons) is implemented in plain CSS to match the ADO branches list.
-- View toggle buttons are always `subtle={true}`; the active state is indicated with `box-shadow: inset 0 0 0 2px` to avoid layout shift from border/padding changes.
+- View toggle buttons are always `subtle={true}`; the active state is indicated with `box-shadow: 0 0 0 2px currentColor` on a wrapper div to avoid layout shift from border/padding changes.
