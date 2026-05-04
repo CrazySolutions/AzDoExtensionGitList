@@ -1,7 +1,7 @@
 import * as React from "react";
 import { GitRepository } from "azure-devops-extension-api/Git";
 import { ProjectNode } from "../common/treeUtils";
-import { repoNameCell } from "../common/repoUtils";
+import { repoNameCell, prCountCell, PrCounts } from "../common/repoUtils";
 import { formatRelativeDate } from "../common/dateUtils";
 import { Card } from "azure-devops-ui/Card";
 import { Icon } from "azure-devops-ui/Icon";
@@ -17,9 +17,10 @@ export interface IRepoTreeViewProps {
     nodes: ProjectNode[];
     expandedProjects: Set<string>;
     onToggleProject: (projectId: string) => void;
-    onNavigateToRepo: (url: string) => void;
+    onNavigate: (url: string) => void;
     filterActive: boolean;
     lastPushByRepoId: Map<string, Date | null>;
+    prCountByRepoId: Map<string, PrCounts>;
 }
 
 function formatSize(bytes: number): string {
@@ -54,7 +55,9 @@ function buildFlatItems(nodes: ProjectNode[], expandedProjects: Set<string>): Tr
 
 function buildColumns(
     filterActive: boolean,
-    lastPushByRepoId: Map<string, Date | null>
+    lastPushByRepoId: Map<string, Date | null>,
+    prCountByRepoId: Map<string, PrCounts>,
+    onNavigate: (url: string) => void
 ): ITableColumn<TreeItem>[] {
     return [
         {
@@ -92,6 +95,20 @@ function buildColumns(
             width: 130
         },
         {
+            id: "prs",
+            name: "Open PRs",
+            renderCell: (_rowIndex, columnIndex, tableColumn, item) => {
+                if (item.kind === "project") {
+                    return renderSimpleCellValue<any>(columnIndex, tableColumn, "");
+                }
+                return renderSimpleCellValue<any>(columnIndex, tableColumn, prCountCell(
+                    prCountByRepoId.get(item.repo.id),
+                    () => onNavigate(item.repo.webUrl + "/pullrequests?_a=active")
+                ));
+            },
+            width: 110
+        },
+        {
             id: "size",
             name: "Size",
             renderCell: (_rowIndex, columnIndex, tableColumn, item) => {
@@ -105,16 +122,16 @@ function buildColumns(
     ];
 }
 
-export function RepoTreeView({ nodes, expandedProjects, onToggleProject, onNavigateToRepo, filterActive, lastPushByRepoId }: IRepoTreeViewProps): JSX.Element {
+export function RepoTreeView({ nodes, expandedProjects, onToggleProject, onNavigate, filterActive, lastPushByRepoId, prCountByRepoId }: IRepoTreeViewProps): JSX.Element {
     const items = buildFlatItems(nodes, expandedProjects);
-    const columns = buildColumns(filterActive, lastPushByRepoId);
+    const columns = buildColumns(filterActive, lastPushByRepoId, prCountByRepoId, onNavigate);
 
     const onActivate = (_event: React.SyntheticEvent<HTMLElement>, row: ITableRow<TreeItem>) => {
         const item = row.data;
         if (item.kind === "project") {
             onToggleProject(item.node.projectId);
         } else {
-            onNavigateToRepo(item.repo.webUrl);
+            onNavigate(item.repo.webUrl);
         }
     };
 

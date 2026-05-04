@@ -48,14 +48,18 @@ To generate a coverage report (minimum 80% line coverage is enforced):
 
 Available from the collection/organisation start page, this hub lists every git repository across all projects the current user has access to.
 
-Two view modes are available via the toggle buttons at the top right of the filter bar:
+Two view modes are available via the toggle buttons at the top right of the filter bar. The selected mode is persisted per browser so the same view is restored on next load.
 
-- **List view** (default) — a flat table with sortable columns: repository name, project, and size.
-- **Tree view** — repositories grouped by project, with collapsible project nodes. Each project header shows a count pill (or `3 of 10` when filtering). Styled to match the ADO branches list.
+- **List view** (default) — a flat table with sortable columns: Repository, Project, Last push, Open PRs, Size.
+- **Tree view** — repositories grouped by project, with collapsible project nodes. Each project header shows a count pill (or `3 of 10` when filtering). Columns: Repository, Last push, Open PRs, Size. Styled to match the ADO branches list.
+
+### Open PRs column
+
+Shows `draft | active` pull request counts for each repository, lazy-loaded in the background after the list renders. Clicking the count navigates to that repository's active pull request list. The column is sortable — active count takes priority over draft count.
 
 ## Repository list (project level)
 
-Available under the Repos section inside each project, this hub lists all git repositories within that project. Columns show the repository name and its size. All columns are sortable.
+Available under the Repos section inside each project, this hub lists all git repositories within that project. Sortable columns: Repository, Last push, Open PRs, Size. The Open PRs column behaves identically to the organisation-level hub.
 
 ## Filtering
 

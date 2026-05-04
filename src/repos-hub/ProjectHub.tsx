@@ -13,11 +13,10 @@ import { Table, ITableColumn, ITableRow, renderSimpleCellValue, ColumnSorting, s
 import { Card } from "azure-devops-ui/Card";
 import { showRootComponent } from "../common/Common";
 import { applyFilter } from "../common/repositoryFilter";
-import { repoNameCell } from "../common/repoUtils";
+import { repoNameCell, prCountCell, PrCounts } from "../common/repoUtils";
 import { formatRelativeDate } from "../common/dateUtils";
 import { GitRepository } from "azure-devops-extension-api/Git/Git";
 import { CommonServiceIds, IHostNavigationService, IProjectPageService, getClient } from "azure-devops-extension-api";
-import { ISimpleListCell } from "azure-devops-ui/List";
 import { GitClient71 } from "../common/apiClients";
 import { ArrayItemProvider } from "azure-devops-ui/Utilities/Provider";
 import { Pill, PillSize, PillVariant } from 'azure-devops-ui/Pill';
@@ -35,11 +34,19 @@ class ProjectHubContent extends React.Component<{}, IProjectHubState> {
     private navigationService?: IHostNavigationService;
     private _mounted = false;
     private lastPushByRepoId: Map<string, Date | null> = new Map();
+    private prCountByRepoId: Map<string, PrCounts> = new Map();
 
-    // Column indices: 0=name, 1=lastPush, 2=size
+    // Column indices: 0=name, 1=lastPush, 2=prs, 3=size
     private sortFunctions: Array<(a: GitRepository, b: GitRepository) => number> = [
         (a, b) => a.name.localeCompare(b.name),
         (a, b) => (this.lastPushByRepoId.get(a.id)?.getTime() ?? -1) - (this.lastPushByRepoId.get(b.id)?.getTime() ?? -1),
+        (a, b) => {
+            const ac = this.prCountByRepoId.get(a.id);
+            const bc = this.prCountByRepoId.get(b.id);
+            const aKey = (ac?.active ?? 0) * 10000 + (ac?.draft ?? 0);
+            const bKey = (bc?.active ?? 0) * 10000 + (bc?.draft ?? 0);
+            return aKey - bKey;
+        },
         (a, b) => (Number.isNaN(a.size) ? 0 : a.size) - (Number.isNaN(b.size) ? 0 : b.size)
     ];
 
@@ -75,6 +82,18 @@ class ProjectHubContent extends React.Component<{}, IProjectHubState> {
                         return renderSimpleCellValue<any>(columnIndex, tableColumn, formatRelativeDate(this.lastPushByRepoId.get(tableItem.id)));
                     },
                     width: 130
+                },
+                {
+                    id: "prs",
+                    name: "Open PRs",
+                    sortProps: {},
+                    renderCell: (rowIndex, columnIndex, tableColumn, tableItem): JSX.Element => {
+                        return renderSimpleCellValue<any>(columnIndex, tableColumn, prCountCell(
+                            this.prCountByRepoId.get(tableItem.id),
+                            () => this.navigationService?.navigate(tableItem.webUrl + "/pullrequests?_a=active")
+                        ));
+                    },
+                    width: 110
                 },
                 {
                     id: "size",
@@ -115,10 +134,34 @@ class ProjectHubContent extends React.Component<{}, IProjectHubState> {
         });
 
         this.loadPushDates(this.repositories);
+        this.loadPrCounts(this.repositories);
     }
 
     public componentWillUnmount() {
         this._mounted = false;
+    }
+
+    private async loadPrCounts(repos: GitRepository[]): Promise<void> {
+        const BATCH_SIZE = 50;
+        for (let i = 0; i < repos.length; i += BATCH_SIZE) {
+            if (!this._mounted) return;
+            const batch = repos.slice(i, i + BATCH_SIZE);
+            const results = await Promise.all(
+                batch.map(async (repo): Promise<{ id: string; counts: PrCounts }> => {
+                    try {
+                        const prs = await getClient(GitClient71).getActivePullRequests(repo.id, repo.project.name, 1000);
+                        const draft = prs.filter(pr => pr.isDraft).length;
+                        return { id: repo.id, counts: { draft, active: prs.length - draft } };
+                    } catch {
+                        return { id: repo.id, counts: { draft: 0, active: 0 } };
+                    }
+                })
+            );
+            if (!this._mounted) return;
+            results.forEach(({ id, counts }) => this.prCountByRepoId.set(id, counts));
+            const filtered = applyFilter(this.repositories, this.state.filterText);
+            this.setState({ gitRepos: new ArrayItemProvider(filtered) });
+        }
     }
 
     private async loadPushDates(repos: GitRepository[]): Promise<void> {
