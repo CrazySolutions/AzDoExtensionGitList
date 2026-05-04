@@ -42,6 +42,16 @@ interface IOrgHubState {
 }
 
 class OrgHubContent extends React.Component<{}, IOrgHubState> {
+    private static readonly VIEW_MODE_KEY = "org-hub-view-mode";
+
+    private static readViewMode(): ViewMode {
+        try {
+            const saved = localStorage.getItem(OrgHubContent.VIEW_MODE_KEY);
+            if (saved === "list" || saved === "tree") return saved;
+        } catch { /* storage unavailable */ }
+        return "list";
+    }
+
     private repositories: GitRepository[] = [];
     private allProjectNodes: ProjectNode[] = [];
     private navigationService?: IHostNavigationService;
@@ -114,7 +124,7 @@ class OrgHubContent extends React.Component<{}, IOrgHubState> {
             ],
             nbrRepos: 0,
             filterText: "",
-            viewMode: "list",
+            viewMode: OrgHubContent.readViewMode(),
             expandedProjects: new Set(),
             filterExpandedProjects: new Set()
         };
@@ -196,6 +206,7 @@ class OrgHubContent extends React.Component<{}, IOrgHubState> {
 
     private onToggleViewMode = (mode: ViewMode) => {
         this.setState({ viewMode: mode });
+        try { localStorage.setItem(OrgHubContent.VIEW_MODE_KEY, mode); } catch { /* storage unavailable */ }
     };
 
     private onToggleProject = (projectId: string) => {
