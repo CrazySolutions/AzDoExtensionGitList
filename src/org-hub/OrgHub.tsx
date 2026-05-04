@@ -261,7 +261,7 @@ class OrgHubContent extends React.Component<{}, IOrgHubState> {
                                 <div className={`view-toggle-wrapper${viewMode === "tree" ? " view-toggle-wrapper--active" : ""}`}>
                                     <Button
                                         subtle={true}
-                                        iconProps={{ iconName: "Group" }}
+                                        iconProps={{ iconName: "Org" }}
                                         ariaLabel="Tree view"
                                         ariaPressed={viewMode === "tree"}
                                         onClick={() => this.onToggleViewMode("tree")}
