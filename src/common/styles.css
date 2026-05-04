@@ -13,3 +13,12 @@
   margin-top: 16px;
   margin-bottom: 16px;
 }
+
+.pr-count-cell {
+  cursor: pointer;
+  color: var(--communication-foreground);
+}
+
+.pr-count-cell:hover {
+  text-decoration: underline;
+}

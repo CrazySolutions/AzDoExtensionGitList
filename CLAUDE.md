@@ -169,7 +169,7 @@ src/
     Common.tsx            # Shared showRootComponent helper
     repositoryFilter.ts   # Wildcard/substring filter logic for repo name filtering
     treeUtils.ts          # ProjectNode type, buildProjectNodes, applyFilterToTree
-    repoUtils.tsx         # repoNameCell — shared repo name cell renderer
+    repoUtils.tsx         # repoNameCell, prCountCell, PrCounts — shared repo cell renderers and types
     dateUtils.ts          # formatRelativeDate utility
     apiClients.ts         # GitClient71, CoreClient71 — API version 7.1 wrappers
     styles.css            # Shared styles
@@ -207,3 +207,15 @@ The organisation-level hub (`OrgHub.tsx`) supports two view modes toggled by the
 - Expand state is split across two `Set<string>` instances in `OrgHubContent` state: `expandedProjects` (user's manual choices, all projects seeded on load) and `filterExpandedProjects` (auto-computed when filter is active). `activeExpandedProjects()` returns whichever is current.
 - The `azure-devops-ui` package does **not** include a Tree component. The visual treatment (folder background `--palette-neutral-4`, 36px row height, border separators, inset chevrons) is implemented in plain CSS to match the ADO branches list.
 - View toggle buttons are always `subtle={true}`; the active state is indicated with `box-shadow: 0 0 0 2px currentColor` on a wrapper div to avoid layout shift from border/padding changes.
+- The selected view mode is persisted in `localStorage` under the key `org-hub-view-mode` and read synchronously in the constructor so the correct view is set before the first render. No async call is needed.
+
+### Lazy-loaded column data
+
+Both hubs load two sets of per-repository data in the background after the initial repo list renders: **last push dates** and **open PR counts**. The pattern is identical for both:
+
+- A `Map<string, T>` is held as a private class field (not in React state).
+- A `loadX` method fetches data in batches of 50 using `Promise.all`, sets the map entries, then calls `setState` to trigger a re-render with the updated data.
+- Both loaders run concurrently via parallel `this.loadPushDates()` / `this.loadPrCounts()` calls.
+- Cells render empty while their entry is absent from the map, then fill in as batches arrive.
+- PR counts are fetched with `GitClient71.getActivePullRequests` (status=active, top=1000). Draft PRs are a subset of active — `isDraft: true` — so a single call gives both counts. Clicking the count cell navigates to `repo.webUrl + "/pullrequests?_a=active"`. `stopPropagation` is called on the click to prevent the row's own navigation from also firing.
+- The PR sort key is `active * 10000 + draft` so active count takes priority over draft count when sorting.

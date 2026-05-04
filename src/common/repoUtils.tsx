@@ -4,6 +4,23 @@ import { Icon } from "azure-devops-ui/Icon";
 import { Pill, PillSize, PillVariant } from "azure-devops-ui/Pill";
 import { ISimpleListCell } from "azure-devops-ui/List";
 
+export interface PrCounts { draft: number; active: number; }
+
+export function prCountCell(counts: PrCounts | undefined, onNavigate: (e: React.MouseEvent) => void): ISimpleListCell {
+    if (counts === undefined) return { text: "" };
+    return {
+        textNode: (
+            <span
+                className="pr-count-cell"
+                title={`${counts.draft} draft, ${counts.active} active`}
+                onClick={(e) => { e.stopPropagation(); onNavigate(e); }}
+            >
+                {`${counts.draft} | ${counts.active}`}
+            </span>
+        )
+    };
+}
+
 export function repoNameCell(repo: GitRepository, indent?: boolean): ISimpleListCell {
     return {
         textNode: (

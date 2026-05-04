@@ -1,5 +1,5 @@
 import { GitRestClient } from "azure-devops-extension-api/Git";
-import { GitPush, GitPushSearchCriteria, GitRepository } from "azure-devops-extension-api/Git/Git";
+import { GitPullRequest, GitPush, GitPushSearchCriteria, GitRepository } from "azure-devops-extension-api/Git/Git";
 import { CoreRestClient } from "azure-devops-extension-api/Core";
 import { TeamProjectReference } from "azure-devops-extension-api/Core/Core";
 import { PagedList } from "azure-devops-extension-api/WebApi/WebApi";
@@ -26,6 +26,15 @@ export class GitClient71 extends GitRestClient {
             routeTemplate: "{project}/_apis/git/repositories/{repositoryId}/pushes/{pushId}",
             routeValues: { project, repositoryId },
             queryParams: { '$skip': skip, '$top': top, searchCriteria }
+        });
+    }
+
+    public getActivePullRequests(repositoryId: string, project: string, top: number): Promise<GitPullRequest[]> {
+        return this.beginRequest<GitPullRequest[]>({
+            apiVersion: "7.1",
+            routeTemplate: "{project}/_apis/git/repositories/{repositoryId}/pullRequests/{pullRequestId}",
+            routeValues: { project, repositoryId },
+            queryParams: { searchCriteria: { status: "active" }, '$top': top }
         });
     }
 }

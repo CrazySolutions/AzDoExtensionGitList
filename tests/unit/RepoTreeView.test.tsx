@@ -24,6 +24,7 @@ jest.mock("azure-devops-ui/Table", () => ({
         const items: any[] = itemProvider.value;
         const nameCol = columns?.find((c: any) => c.id === "name");
         const lastPushCol = columns?.find((c: any) => c.id === "lastPush");
+        const prsCol = columns?.find((c: any) => c.id === "prs");
         return (
             <div data-testid="tree-table">
                 {items.map((item: any, i: number) => {
@@ -42,6 +43,7 @@ jest.mock("azure-devops-ui/Table", () => ({
                         );
                     }
                     const lastPushCell = lastPushCol?.renderCell?.(i, 1, lastPushCol, item);
+                    const prsCell = prsCol?.renderCell?.(i, 2, prsCol, item);
                     return (
                         <div
                             key={item.repo.id || i}
@@ -50,6 +52,7 @@ jest.mock("azure-devops-ui/Table", () => ({
                         >
                             {nameCell}
                             <span data-testid="last-push-cell">{lastPushCell}</span>
+                            <span data-testid="prs-cell">{prsCell}</span>
                         </div>
                     );
                 })}
@@ -116,9 +119,10 @@ function render(ui: JSX.Element) {
 const defaultProps = {
     expandedProjects: new Set<string>(),
     onToggleProject: () => {},
-    onNavigateToRepo: () => {},
+    onNavigate: () => {},
     filterActive: false,
-    lastPushByRepoId: new Map<string, Date | null>()
+    lastPushByRepoId: new Map<string, Date | null>(),
+    prCountByRepoId: new Map<string, { draft: number; active: number }>()
 };
 
 describe('RepoTreeView', () => {
@@ -164,13 +168,25 @@ describe('RepoTreeView', () => {
         expect(handler).toHaveBeenCalledWith('p1');
     });
 
-    it('calls onNavigateToRepo when a repo row is activated', () => {
+    it('calls onNavigate when a repo row is activated', () => {
         const handler = jest.fn();
-        render(<RepoTreeView nodes={nodes} {...defaultProps} expandedProjects={new Set(['p1'])} onNavigateToRepo={handler} />);
+        render(<RepoTreeView nodes={nodes} {...defaultProps} expandedProjects={new Set(['p1'])} onNavigate={handler} />);
         act(() => {
             (container.querySelector('[data-testid="repo-row"]') as HTMLElement).click();
         });
         expect(handler).toHaveBeenCalledWith('https://dev.azure.com/org/proj/_git/auth-service');
+    });
+
+    it('shows PR counts when loaded', () => {
+        const prMap = new Map([['p1-0', { draft: 1, active: 3 }]]);
+        render(<RepoTreeView nodes={nodes} {...defaultProps} expandedProjects={new Set(['p1'])} prCountByRepoId={prMap} />);
+        expect(container.textContent).toContain('1 | 3');
+    });
+
+    it('shows empty PR cell when counts are not yet loaded', () => {
+        render(<RepoTreeView nodes={nodes} {...defaultProps} expandedProjects={new Set(['p1'])} />);
+        const repoRow = container.querySelector('[data-testid="repo-row"]')!;
+        expect(repoRow.querySelector('[class="pr-count-cell"]')).toBeNull();
     });
 
     it('renders ChevronDown icon for expanded projects and ChevronRight for collapsed', () => {
