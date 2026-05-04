@@ -78,7 +78,7 @@ function buildColumns(
                 }
                 return renderSimpleCellValue<any>(columnIndex, tableColumn, repoNameCell(item.repo, true));
             },
-            width: -1
+            width: 400
         },
         {
             id: "lastPush",

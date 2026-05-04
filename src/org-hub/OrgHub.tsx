@@ -78,7 +78,7 @@ class OrgHubContent extends React.Component<{}, IOrgHubState> {
                     renderCell: (rowIndex, columnIndex, tableColumn, tableItem): JSX.Element => {
                         return renderSimpleCellValue<any>(columnIndex, tableColumn, repoNameCell(tableItem));
                     },
-                    width: -1
+                    width: 400
                 },
                 {
                     id: "project",
