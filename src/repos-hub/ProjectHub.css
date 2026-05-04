@@ -17,13 +17,3 @@
     white-space: nowrap;
 }
 
-/* Same compact-column layout as OrgHub — see OrgHub.css for rationale. */
-.git-list-project-hub .bolt-table-card {
-    width: fit-content;
-    max-width: 100%;
-}
-
-.git-list-project-hub .bolt-list.bolt-list {
-    table-layout: auto;
-    width: auto;
-}

@@ -110,6 +110,14 @@ class OrgHubContent extends React.Component<{}, IOrgHubState> {
                         return renderSimpleCellValue<any>(columnIndex, tableColumn, size.toFixed(2) + suffix);
                     },
                     width: 120
+                },
+                {
+                    id: "spacer",
+                    name: "",
+                    renderCell: (rowIndex, columnIndex, tableColumn, _tableItem): JSX.Element => {
+                        return renderSimpleCellValue<any>(columnIndex, tableColumn, "");
+                    },
+                    width: -1
                 }
             ],
             nbrRepos: 0,

@@ -65,16 +65,3 @@
     white-space: nowrap;
 }
 
-/* Column sizing: let every column shrink to its content width.
-   Overrides ADO's bolt-list defaults (table-layout: fixed; width: 100%).
-   The card then shrinks to match; max-width: 100% triggers horizontal
-   scroll inside the card-content area on narrow viewports. */
-.git-list-org-hub .bolt-table-card {
-    width: fit-content;
-    max-width: 100%;
-}
-
-.git-list-org-hub .bolt-list.bolt-list {
-    table-layout: auto;
-    width: auto;
-}

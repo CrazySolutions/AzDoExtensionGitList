@@ -101,6 +101,14 @@ function buildColumns(
                 return renderSimpleCellValue<any>(columnIndex, tableColumn, formatSize(item.repo.size));
             },
             width: 80
+        },
+        {
+            id: "spacer",
+            name: "",
+            renderCell: (_rowIndex, columnIndex, tableColumn, _item) => {
+                return renderSimpleCellValue<any>(columnIndex, tableColumn, "");
+            },
+            width: -1
         }
     ];
 }
