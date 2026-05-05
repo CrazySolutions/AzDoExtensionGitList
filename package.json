@@ -22,7 +22,7 @@
     "package": "npm run build && tfx extension create --manifest-globs azure-devops-extension.json"
   },
   "dependencies": {
-    "azure-devops-extension-api": "^4.0.3",
+    "azure-devops-extension-api": "^5.271.0",
     "azure-devops-extension-sdk": "^4.0.2",
     "azure-devops-ui": "^2.272.0",
     "react": "^16.14.0",
